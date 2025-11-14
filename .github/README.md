@@ -21,7 +21,6 @@ This directory contains GitHub Actions workflows for continuous integration and 
   - Runs integration tests using `make test-integration`
 - **Build**: Compiles all binaries
   - Builds API server, CLI, and TUI
-  - Uploads binaries as artifacts (7-day retention)
 - **Docker**: Validates Docker images
   - Builds Docker images
   - Tests Docker images with sample code
@@ -49,7 +48,6 @@ This directory contains GitHub Actions workflows for continuous integration and 
 - **Build**: Builds all components
   - Compiles all binaries
   - Builds and tests Docker images
-  - Uploads binaries with commit SHA (90-day retention)
 - **Security**: Security scanning
   - Runs `gosec` security scanner
   - Uploads SARIF results to GitHub Security
@@ -62,7 +60,6 @@ This directory contains GitHub Actions workflows for continuous integration and 
 
 **Artifacts**:
 - Coverage reports (retained for 30 days)
-- Binaries tagged with commit SHA (retained for 90 days)
 
 ---
 
@@ -71,7 +68,7 @@ This directory contains GitHub Actions workflows for continuous integration and 
 ### GitHub Actions Runners
 
 All workflows use `ubuntu-latest` runners with:
-- Go 1.24
+- Go 1.23
 - Docker support
 - 7GB RAM, 2-core CPU (GitHub-hosted default)
 
@@ -96,7 +93,7 @@ All workflows use Go module caching to speed up builds:
 ```yaml
 uses: actions/setup-go@v5
 with:
-  go-version: '1.24'
+  go-version: '1.23'
   cache: true  # Caches Go modules
 ```
 
@@ -109,9 +106,10 @@ The PR and CI workflows run jobs in parallel where possible:
 
 ### Artifacts
 
-Workflows upload artifacts for debugging and analysis:
-- **PR Workflow**: Binaries (7 days)
-- **CI Workflow**: Binaries (90 days), Coverage reports (30 days)
+Workflows upload artifacts for analysis:
+- **CI Workflow**: Coverage reports (30 days)
+
+Binary artifacts are not uploaded as they can be easily rebuilt with `make build`.
 
 ---
 
