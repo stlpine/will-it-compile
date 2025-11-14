@@ -1,4 +1,12 @@
 import { Language, LANGUAGE_CONFIGS, Standard } from '../../types/api'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select'
+import { Code2, Settings2 } from 'lucide-react'
 
 interface EnvironmentSelectorProps {
   selectedLanguage: Language
@@ -9,7 +17,7 @@ interface EnvironmentSelectorProps {
 }
 
 /**
- * Environment selector component for choosing language and standard
+ * Environment selector component with shadcn/ui Select
  */
 export function EnvironmentSelector({
   selectedLanguage,
@@ -19,57 +27,66 @@ export function EnvironmentSelector({
   disabled = false,
 }: EnvironmentSelectorProps) {
   const languages = Object.keys(LANGUAGE_CONFIGS)
-  const showStandardSelector = selectedLanguage === 'cpp' || selectedLanguage === 'c++'
+  const showStandardSelector =
+    selectedLanguage === 'cpp' || selectedLanguage === 'c++'
 
-  const cppStandards: Standard[] = ['c++11', 'c++14', 'c++17', 'c++20', 'c++23']
+  const cppStandards: Standard[] = [
+    'c++11',
+    'c++14',
+    'c++17',
+    'c++20',
+    'c++23',
+  ]
 
   return (
     <div className="flex flex-col sm:flex-row gap-4">
       {/* Language Selector */}
       <div className="flex-1">
-        <label
-          htmlFor="language-select"
-          className="block text-sm font-medium text-gray-700 mb-1"
-        >
+        <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+          <Code2 className="h-4 w-4" />
           Language
         </label>
-        <select
-          id="language-select"
+        <Select
           value={selectedLanguage}
-          onChange={(e) => onLanguageChange(e.target.value as Language)}
+          onValueChange={(value) => onLanguageChange(value as Language)}
           disabled={disabled}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
         >
-          {languages.map((lang) => (
-            <option key={lang} value={lang}>
-              {LANGUAGE_CONFIGS[lang].label}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select a language" />
+          </SelectTrigger>
+          <SelectContent>
+            {languages.map((lang) => (
+              <SelectItem key={lang} value={lang}>
+                {LANGUAGE_CONFIGS[lang].label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Standard Selector (C++ only) */}
       {showStandardSelector && onStandardChange && (
         <div className="flex-1">
-          <label
-            htmlFor="standard-select"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
+          <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+            <Settings2 className="h-4 w-4" />
             C++ Standard
           </label>
-          <select
-            id="standard-select"
+          <Select
             value={selectedStandard || 'c++20'}
-            onChange={(e) => onStandardChange(e.target.value as Standard)}
+            onValueChange={(value) => onStandardChange(value as Standard)}
             disabled={disabled}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
           >
-            {cppStandards.map((std) => (
-              <option key={std} value={std}>
-                {std}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select C++ standard" />
+            </SelectTrigger>
+            <SelectContent>
+              {cppStandards.map((std) => (
+                <SelectItem key={std} value={std}>
+                  {std}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       )}
     </div>
