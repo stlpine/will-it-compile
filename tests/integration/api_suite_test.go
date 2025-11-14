@@ -190,5 +190,8 @@ int main() {
 
 // TestAPISuite runs the test suite
 func TestAPISuite(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test suite in short mode")
+	}
 	suite.Run(t, new(APISuite))
 }

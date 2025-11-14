@@ -16,6 +16,10 @@ import (
 )
 
 func TestHealthEndpoint(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
 	server, err := api.NewServer()
 	require.NoError(t, err, "Failed to create server")
 	defer server.Close()
@@ -37,6 +41,10 @@ func TestHealthEndpoint(t *testing.T) {
 }
 
 func TestGetEnvironments(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
 	server, err := api.NewServer()
 	require.NoError(t, err, "Failed to create server")
 	defer server.Close()
