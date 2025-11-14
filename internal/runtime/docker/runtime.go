@@ -9,12 +9,12 @@ import (
 )
 
 // DockerRuntime implements CompilationRuntime using Docker
-// This is used for local development and single-server deployments
+// This is used for local development and single-server deployments.
 type DockerRuntime struct {
 	client docker.DockerClient
 }
 
-// NewDockerRuntime creates a new Docker-based compilation runtime
+// NewDockerRuntime creates a new Docker-based compilation runtime.
 func NewDockerRuntime() (*DockerRuntime, error) {
 	client, err := docker.NewClient()
 	if err != nil {
@@ -26,7 +26,7 @@ func NewDockerRuntime() (*DockerRuntime, error) {
 	}, nil
 }
 
-// Compile runs compilation using Docker containers
+// Compile runs compilation using Docker containers.
 func (d *DockerRuntime) Compile(ctx context.Context, config runtime.CompilationConfig) (*runtime.CompilationOutput, error) {
 	// Convert runtime.CompilationConfig to docker.CompilationConfig
 	dockerConfig := docker.CompilationConfig{
@@ -59,15 +59,15 @@ func (d *DockerRuntime) Compile(ctx context.Context, config runtime.CompilationC
 	}, nil
 }
 
-// ImageExists checks if a Docker image exists locally
+// ImageExists checks if a Docker image exists locally.
 func (d *DockerRuntime) ImageExists(ctx context.Context, imageTag string) (bool, error) {
 	return d.client.ImageExists(ctx, imageTag)
 }
 
-// Close cleans up Docker client resources
+// Close cleans up Docker client resources.
 func (d *DockerRuntime) Close() error {
 	return d.client.Close()
 }
 
-// Ensure DockerRuntime implements CompilationRuntime
+// Ensure DockerRuntime implements CompilationRuntime.
 var _ runtime.CompilationRuntime = (*DockerRuntime)(nil)

@@ -11,13 +11,13 @@ import (
 	"github.com/stlpine/will-it-compile/pkg/models"
 )
 
-// Server represents the API server
+// Server represents the API server.
 type Server struct {
 	compiler *compiler.Compiler
 	jobs     *jobStore
 }
 
-// NewServer creates a new API server instance
+// NewServer creates a new API server instance.
 func NewServer() (*Server, error) {
 	comp, err := compiler.NewCompiler()
 	if err != nil {
@@ -30,7 +30,7 @@ func NewServer() (*Server, error) {
 	}, nil
 }
 
-// Close cleans up server resources
+// Close cleans up server resources.
 func (s *Server) Close() error {
 	return s.compiler.Close()
 }
@@ -45,7 +45,7 @@ func (s *Server) Close() error {
 // @Accept application/json
 // @Param  request body models.CompilationRequest true "Compilation request"
 // @Return 202 {object} models.JobResponse "Job created and queued"
-// @Return 400 {object} models.ErrorResponse "Invalid request body"
+// @Return 400 {object} models.ErrorResponse "Invalid request body".
 func (s *Server) HandleCompile(c echo.Context) error {
 	// Parse request body
 	var req models.CompilationRequest
@@ -83,7 +83,7 @@ func (s *Server) HandleCompile(c echo.Context) error {
 // @Return 200 {object} models.CompilationResult "Compilation result (if completed)"
 // @Return 200 {object} models.JobResponse "Job status (if still processing)"
 // @Return 400 {object} models.ErrorResponse "Missing job ID"
-// @Return 404 {object} models.ErrorResponse "Job not found"
+// @Return 404 {object} models.ErrorResponse "Job not found".
 func (s *Server) HandleGetJob(c echo.Context) error {
 	// Extract job ID from URL path parameter
 	jobID := c.Param("job_id")
@@ -113,7 +113,7 @@ func (s *Server) HandleGetJob(c echo.Context) error {
 // HandleGetEnvironments returns a list of supported compilation environments
 //
 // @HTTP   GET /api/v1/environments
-// @Return 200 {array} models.Environment "List of supported environments"
+// @Return 200 {array} models.Environment "List of supported environments".
 func (s *Server) HandleGetEnvironments(c echo.Context) error {
 	environments := s.compiler.GetSupportedEnvironments()
 	return c.JSON(http.StatusOK, environments)
@@ -122,7 +122,7 @@ func (s *Server) HandleGetEnvironments(c echo.Context) error {
 // HandleHealth returns the health status of the service
 //
 // @HTTP   GET /health
-// @Return 200 {object} map[string]string "Health status"
+// @Return 200 {object} map[string]string "Health status".
 func (s *Server) HandleHealth(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{
 		"status": "healthy",

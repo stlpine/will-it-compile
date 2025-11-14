@@ -5,7 +5,7 @@ import (
 	"github.com/stlpine/will-it-compile/pkg/models"
 )
 
-// handleEditorKeys handles keyboard input in the editor view
+// handleEditorKeys handles keyboard input in the editor view.
 func (m Model) handleEditorKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
@@ -43,7 +43,7 @@ func (m Model) handleEditorKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-// handleHistoryKeys handles keyboard input in the history view
+// handleHistoryKeys handles keyboard input in the history view.
 func (m Model) handleHistoryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "up", "k":
@@ -87,7 +87,7 @@ func (m Model) handleHistoryKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// handleJobDetailKeys handles keyboard input in the job detail view
+// handleJobDetailKeys handles keyboard input in the job detail view.
 func (m Model) handleJobDetailKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "r":
@@ -104,7 +104,7 @@ func (m Model) handleJobDetailKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// handleFilePickerKeys handles keyboard input in the file picker view
+// handleFilePickerKeys handles keyboard input in the file picker view.
 func (m Model) handleFilePickerKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	// Check if file was selected
 	if didSelect, path := m.filePicker.DidSelectFile(msg); didSelect {
@@ -121,14 +121,14 @@ func (m Model) handleFilePickerKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// handleHelpKeys handles keyboard input in the help view
+// handleHelpKeys handles keyboard input in the help view.
 func (m Model) handleHelpKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	// Any key exits help
 	m.state = ViewEditor
 	return m, nil
 }
 
-// cycleLanguage cycles to the next available language
+// cycleLanguage cycles to the next available language.
 func (m Model) cycleLanguage() models.Language {
 	languages := []models.Language{
 		models.LanguageCpp,

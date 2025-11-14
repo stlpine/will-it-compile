@@ -5,14 +5,14 @@ import (
 	"time"
 )
 
-// MockRuntime is a mock implementation of CompilationRuntime for testing
+// MockRuntime is a mock implementation of CompilationRuntime for testing.
 type MockRuntime struct {
-	CompileFunc      func(ctx context.Context, config CompilationConfig) (*CompilationOutput, error)
-	ImageExistsFunc  func(ctx context.Context, imageTag string) (bool, error)
-	CloseFunc        func() error
+	CompileFunc     func(ctx context.Context, config CompilationConfig) (*CompilationOutput, error)
+	ImageExistsFunc func(ctx context.Context, imageTag string) (bool, error)
+	CloseFunc       func() error
 }
 
-// Compile calls the mock function
+// Compile calls the mock function.
 func (m *MockRuntime) Compile(ctx context.Context, config CompilationConfig) (*CompilationOutput, error) {
 	if m.CompileFunc != nil {
 		return m.CompileFunc(ctx, config)
@@ -27,7 +27,7 @@ func (m *MockRuntime) Compile(ctx context.Context, config CompilationConfig) (*C
 	}, nil
 }
 
-// ImageExists calls the mock function
+// ImageExists calls the mock function.
 func (m *MockRuntime) ImageExists(ctx context.Context, imageTag string) (bool, error) {
 	if m.ImageExistsFunc != nil {
 		return m.ImageExistsFunc(ctx, imageTag)
@@ -36,7 +36,7 @@ func (m *MockRuntime) ImageExists(ctx context.Context, imageTag string) (bool, e
 	return true, nil
 }
 
-// Close calls the mock function
+// Close calls the mock function.
 func (m *MockRuntime) Close() error {
 	if m.CloseFunc != nil {
 		return m.CloseFunc()
@@ -44,5 +44,5 @@ func (m *MockRuntime) Close() error {
 	return nil
 }
 
-// Ensure MockRuntime implements CompilationRuntime
+// Ensure MockRuntime implements CompilationRuntime.
 var _ CompilationRuntime = (*MockRuntime)(nil)

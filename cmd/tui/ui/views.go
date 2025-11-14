@@ -8,7 +8,7 @@ import (
 	"github.com/stlpine/will-it-compile/pkg/models"
 )
 
-// viewEditor renders the code editor view
+// viewEditor renders the code editor view.
 func (m Model) viewEditor() string {
 	var b strings.Builder
 
@@ -36,7 +36,7 @@ func (m Model) viewEditor() string {
 	return b.String()
 }
 
-// viewHistory renders the job history view
+// viewHistory renders the job history view.
 func (m Model) viewHistory() string {
 	var b strings.Builder
 
@@ -106,7 +106,7 @@ func (m Model) viewHistory() string {
 	return b.String()
 }
 
-// viewJobDetail renders the job detail view
+// viewJobDetail renders the job detail view.
 func (m Model) viewJobDetail() string {
 	if m.currentJob == nil {
 		return mutedStyle.Render("No job selected")
@@ -117,7 +117,7 @@ func (m Model) viewJobDetail() string {
 	job := m.currentJob
 
 	// Title
-	title := titleStyle.Render(fmt.Sprintf("Job Details: %s", truncate(job.ID, 12)))
+	title := titleStyle.Render("Job Details: " + truncate(job.ID, 12))
 	b.WriteString(title + "\n\n")
 
 	// Job info
@@ -158,7 +158,7 @@ func (m Model) viewJobDetail() string {
 		// Stdout
 		if result.Stdout != "" {
 			stdoutBox := boxStyle.Width(min(m.width-10, 100)).Render(
-				fmt.Sprintf("STDOUT:\n%s", truncate(result.Stdout, 500)),
+				"STDOUT:\n" + truncate(result.Stdout, 500),
 			)
 			b.WriteString(stdoutBox + "\n\n")
 		}
@@ -166,13 +166,13 @@ func (m Model) viewJobDetail() string {
 		// Stderr
 		if result.Stderr != "" {
 			stderrBox := boxStyle.Width(min(m.width-10, 100)).Render(
-				fmt.Sprintf("STDERR:\n%s", truncate(result.Stderr, 500)),
+				"STDERR:\n" + truncate(result.Stderr, 500),
 			)
 			b.WriteString(stderrBox + "\n\n")
 		}
 	} else {
 		// Still processing
-		processing := warningStyle.Render(fmt.Sprintf("%s Processing...", m.spinner.View()))
+		processing := warningStyle.Render(m.spinner.View() + " Processing...")
 		b.WriteString(processing + "\n\n")
 	}
 
@@ -182,7 +182,7 @@ func (m Model) viewJobDetail() string {
 	return b.String()
 }
 
-// viewFilePicker renders the file picker view
+// viewFilePicker renders the file picker view.
 func (m Model) viewFilePicker() string {
 	var b strings.Builder
 
@@ -199,7 +199,7 @@ func (m Model) viewFilePicker() string {
 	return b.String()
 }
 
-// viewHelp renders the help screen
+// viewHelp renders the help screen.
 func (m Model) viewHelp() string {
 	var b strings.Builder
 

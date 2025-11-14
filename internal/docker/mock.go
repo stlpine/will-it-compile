@@ -5,14 +5,14 @@ import (
 	"time"
 )
 
-// MockDockerClient is a mock implementation of DockerClient for testing
+// MockDockerClient is a mock implementation of DockerClient for testing.
 type MockDockerClient struct {
 	RunCompilationFunc func(ctx context.Context, config CompilationConfig) (*CompilationOutput, error)
 	ImageExistsFunc    func(ctx context.Context, imageTag string) (bool, error)
 	CloseFunc          func() error
 }
 
-// RunCompilation calls the mock function
+// RunCompilation calls the mock function.
 func (m *MockDockerClient) RunCompilation(ctx context.Context, config CompilationConfig) (*CompilationOutput, error) {
 	if m.RunCompilationFunc != nil {
 		return m.RunCompilationFunc(ctx, config)
@@ -27,7 +27,7 @@ func (m *MockDockerClient) RunCompilation(ctx context.Context, config Compilatio
 	}, nil
 }
 
-// ImageExists calls the mock function
+// ImageExists calls the mock function.
 func (m *MockDockerClient) ImageExists(ctx context.Context, imageTag string) (bool, error) {
 	if m.ImageExistsFunc != nil {
 		return m.ImageExistsFunc(ctx, imageTag)
@@ -36,7 +36,7 @@ func (m *MockDockerClient) ImageExists(ctx context.Context, imageTag string) (bo
 	return true, nil
 }
 
-// Close calls the mock function
+// Close calls the mock function.
 func (m *MockDockerClient) Close() error {
 	if m.CloseFunc != nil {
 		return m.CloseFunc()
@@ -44,5 +44,5 @@ func (m *MockDockerClient) Close() error {
 	return nil
 }
 
-// Ensure MockDockerClient implements DockerClient
+// Ensure MockDockerClient implements DockerClient.
 var _ DockerClient = (*MockDockerClient)(nil)

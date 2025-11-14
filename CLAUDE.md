@@ -550,6 +550,200 @@ All images must be pre-built and verified during deployment.
 - `docs/architecture/KUBERNETES_ARCHITECTURE.md` - K8s deployment
 - `docs/architecture/DEPLOYMENT_ENVIRONMENTS.md` - Multi-environment strategy
 
+## Code Quality & Linting
+
+### Linting Configuration
+
+**Configuration File**: `.golangci.yml`
+
+The project uses [golangci-lint](https://golangci-lint.run/) v2 with a **pragmatic, production-focused configuration** that avoids overly verbose rules. The linter enforces:
+- **Security** (gosec) - Critical for untrusted code execution
+- **Correctness** (errcheck, staticcheck, govet) - Catch real bugs
+- **Error handling** (errorlint, err113) - Proper error patterns
+- **Context handling** (contextcheck, noctx) - Proper context usage
+- **Code quality** (gocyclo, misspell) - Reasonable complexity limits
+
+**Deliberately Disabled Linters** (too verbose/opinionated):
+- ❌ `revive` - Package comments and naming too verbose for internal code
+- ❌ `gocritic` - Too opinionated
+- ❌ `funlen` - Function length is subjective, forces unnecessary splitting
+- ❌ `gocognit` - Cognitive complexity similar to funlen
+- ❌ `nestif` - Nested if depth is subjective
+- ❌ `exhaustive` - Forces verbose default cases in switches
+- ❌ `godot` - Comment punctuation overly pedantic
+- ❌ `goprintffuncname` - Printf naming is stylistic preference
+- ❌ `wrapcheck` - Too strict for internal packages
+
+**Running the Linter:**
+```bash
+make lint              # Check for issues
+make lint-fix          # Auto-fix issues where possible
+make lint-verbose      # Verbose output
+```
+
+### Critical Linting Rules
+
+#### 1. Error Handling - Sentinel Errors (err113)
+
+**Rule**: Use static sentinel errors instead of dynamic errors created with `errors.New()` or `fmt.Errorf()`.
+
+**Why**: Sentinel errors enable better error matching, testing, and API stability.
+
+**Pattern:**
+```go
+// ❌ BAD - Dynamic error
+return errors.New("compilation failed")
+
+// ✅ GOOD - Sentinel error
+var ErrCompilationFailed = errors.New("compilation failed")
+return ErrCompilationFailed
+
+// ✅ GOOD - Sentinel error with context
+var ErrUnsupportedLanguage = errors.New("unsupported language")
+return fmt.Errorf("%w: %s", ErrUnsupportedLanguage, lang)
+```
+
+**Implementation Locations:**
+- `pkg/models/request.go` - Request validation errors
+- `internal/compiler/compiler.go` - Compilation errors
+- `internal/compiler/config.go` - Configuration errors
+- `internal/runtime/factory.go` - Runtime errors
+- `cmd/cli/commands/` - CLI command errors
+- `cmd/tui/client/client.go` - API client errors
+
+#### 2. Context Handling (contextcheck)
+
+**Rule**: Never use `context.Background()` in cleanup/defer operations. Use `context.WithoutCancel()` instead.
+
+**Why**: Cleanup operations must complete even if the parent context is cancelled.
+
+**Pattern:**
+```go
+// ❌ BAD - Context.Background() loses parent context values
+defer func() {
+    cleanupCtx := context.Background()
+    c.cleanup(cleanupCtx)
+}()
+
+// ✅ GOOD - WithoutCancel preserves values but won't be cancelled
+defer func() {
+    cleanupCtx := context.WithoutCancel(ctx)
+    c.cleanup(cleanupCtx)
+}()
+```
+
+**Fixed Locations:**
+- `internal/docker/client.go:94-99` - Container cleanup
+- `internal/docker/client.go:123-124` - Container kill on timeout
+- `internal/docker/client.go:128-129` - Output collection
+- `internal/runtime/kubernetes/runtime.go:77-79` - K8s job cleanup
+- `internal/runtime/kubernetes/runtime.go:290-292` - K8s job output collection
+
+#### 3. Unchecked Errors (errcheck)
+
+**Rule**: Always check error returns, especially for Close(), Remove(), and Delete() operations.
+
+**Pattern:**
+```go
+// ❌ BAD - Unchecked error
+defer server.Close()
+
+// ✅ GOOD - Error logged
+defer func() {
+    if err := server.Close(); err != nil {
+        log.Printf("Error closing server: %v", err)
+    }
+}()
+
+// ✅ ACCEPTABLE - Explicitly ignored with comment
+defer resp.Body.Close() // errcheck: acceptable for HTTP response cleanup
+```
+
+**Exceptions:**
+- HTTP response body Close() in client code (configured in `.golangci.yml`)
+- Test mock errors (use `//nolint:err113` comment)
+
+#### 4. Import Formatting (Auto-Fixed)
+
+**Linters**: `gci`, `goimports` (formatters)
+
+**Rule**: Imports must be organized in standard order: stdlib, external, internal.
+
+**Action**: Running `golangci-lint run --fix` or `make lint-fix` handles this automatically.
+
+### Philosophy: Pragmatic Over Pedantic
+
+This project takes a **pragmatic approach to linting**: we enable linters that catch **real bugs and security issues**, while disabling those that enforce **subjective style preferences** or create unnecessarily verbose code.
+
+**What We Care About:**
+- ✅ Security vulnerabilities (gosec)
+- ✅ Unchecked errors that could cause bugs (errcheck)
+- ✅ Proper error patterns for maintainability (err113, errorlint)
+- ✅ Correct context usage for timeouts/cancellation (contextcheck)
+- ✅ Catching deprecated APIs (staticcheck)
+- ✅ Reasonable complexity limits (gocyclo: 15)
+
+**What We Don't Care About:**
+- ❌ Package comment boilerplate for obvious packages
+- ❌ Strict function length limits that force awkward splitting
+- ❌ Printf function naming conventions
+- ❌ Overly opinionated code style suggestions
+- ❌ Comment punctuation rules
+
+**Result**: ~40 linting issues instead of 168, all of them meaningful.
+
+### Security Linting (gosec)
+
+**Enabled**: Critical for this project due to untrusted code execution.
+
+**Accepted Warnings**:
+- `G304` (file inclusion via variable) - Acceptable for config file loading and user-specified source files with validation
+- `G306` (file permissions) - Test files can use relaxed permissions
+
+**Never Ignore**:
+- Command injection warnings
+- SQL injection (if database added)
+- Unsafe deserialization
+
+### Linting in CI/CD
+
+**Pre-commit**: Developers should run `make lint` before committing.
+
+**CI Pipeline** (future):
+```yaml
+- name: Lint
+  run: |
+    make lint
+    # Fail build on errors (errcheck, gosec, staticcheck, govet)
+```
+
+### Quick Reference
+
+| Issue Type | Severity | Action |
+|------------|----------|--------|
+| errcheck | ERROR | Must fix - unchecked errors are bugs |
+| gosec | ERROR | Must fix or justify with comment |
+| err113 | ERROR | Use sentinel errors |
+| contextcheck | ERROR | Use context.WithoutCancel for cleanup |
+| staticcheck | WARNING | Fix deprecated API usage |
+| gocyclo | WARNING | Refactor if complexity >15 |
+| unused | WARNING | Remove dead code |
+| misspell | AUTO-FIX | Run `make lint-fix` |
+
+### Adding Nolint Comments
+
+When you must ignore a linter for a specific line:
+
+```go
+//nolint:err113 // mock error for testing
+return errors.New("test error")
+
+//nolint:gosec // G304: config file path is validated
+data, err := os.ReadFile(configPath)
+```
+
+**Important**: Always include a comment explaining WHY the lint is disabled.
+
 ## Code Style Guidelines
 
 ### Error Handling

@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	// Version information (set by build flags)
+	// Version information (set by build flags).
 	version   = "dev"
 	commit    = "none"
 	buildDate = "unknown"
@@ -36,7 +36,7 @@ in a sandboxed Docker container with strict resource limits.`,
   will-it-compile version`,
 }
 
-// Execute runs the root command
+// Execute runs the root command.
 func Execute() error {
 	return rootCmd.Execute()
 }
@@ -50,33 +50,33 @@ func init() {
 	rootCmd.PersistentFlags().BoolP("quiet", "q", false, "quiet mode (errors only)")
 }
 
-// isVerbose returns true if verbose flag is set
+// isVerbose returns true if verbose flag is set.
 func isVerbose(cmd *cobra.Command) bool {
 	verbose, _ := cmd.Flags().GetBool("verbose")
 	return verbose
 }
 
-// isQuiet returns true if quiet flag is set
+// isQuiet returns true if quiet flag is set.
 func isQuiet(cmd *cobra.Command) bool {
 	quiet, _ := cmd.Flags().GetBool("quiet")
 	return quiet
 }
 
-// printInfo prints informational messages (unless quiet mode)
+// printInfo prints informational messages (unless quiet mode).
 func printInfo(cmd *cobra.Command, format string, args ...interface{}) {
 	if !isQuiet(cmd) {
 		fmt.Fprintf(os.Stdout, format+"\n", args...)
 	}
 }
 
-// printVerbose prints verbose messages (only in verbose mode)
+// printVerbose prints verbose messages (only in verbose mode).
 func printVerbose(cmd *cobra.Command, format string, args ...interface{}) {
 	if isVerbose(cmd) {
 		fmt.Fprintf(os.Stdout, "[VERBOSE] "+format+"\n", args...)
 	}
 }
 
-// printError prints error messages
+// printError prints error messages.
 func printError(format string, args ...interface{}) {
 	fmt.Fprintf(os.Stderr, "Error: "+format+"\n", args...)
 }

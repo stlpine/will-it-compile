@@ -1,6 +1,6 @@
 package models
 
-// EnvironmentSpec describes a compilation environment
+// EnvironmentSpec describes a compilation environment.
 type EnvironmentSpec struct {
 	Language     Language     `json:"language"`
 	Compiler     Compiler     `json:"compiler"`
@@ -12,7 +12,7 @@ type EnvironmentSpec struct {
 	Flags        []string     `json:"flags,omitempty"`
 }
 
-// Environment represents a supported compilation environment
+// Environment represents a supported compilation environment.
 type Environment struct {
 	Language  string   `json:"language"`
 	Compilers []string `json:"compilers"`

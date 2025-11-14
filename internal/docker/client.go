@@ -2,6 +2,7 @@ package docker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -14,23 +15,23 @@ import (
 )
 
 const (
-	// Resource limits
+	// Resource limits.
 	MaxMemory     = 128 * 1024 * 1024 // 128MB
 	MaxMemorySwap = 128 * 1024 * 1024 // No swap
-	MaxCPUQuota   = 50000              // 0.5 CPU
-	MaxPidsLimit  = 100                // Max processes
-	MaxOutputSize = 1 * 1024 * 1024    // 1MB output
+	MaxCPUQuota   = 50000             // 0.5 CPU
+	MaxPidsLimit  = 100               // Max processes
+	MaxOutputSize = 1 * 1024 * 1024   // 1MB output
 
-	// Timeouts
+	// Timeouts.
 	MaxCompilationTime = 30 * time.Second
 )
 
-// Client wraps the Docker client with secure container operations
+// Client wraps the Docker client with secure container operations.
 type Client struct {
 	cli *client.Client
 }
 
-// NewClient creates a new Docker client
+// NewClient creates a new Docker client.
 func NewClient() (*Client, error) {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
@@ -40,12 +41,12 @@ func NewClient() (*Client, error) {
 	return &Client{cli: cli}, nil
 }
 
-// Close closes the Docker client
+// Close closes the Docker client.
 func (c *Client) Close() error {
 	return c.cli.Close()
 }
 
-// ImageExists checks if a Docker image exists locally
+// ImageExists checks if a Docker image exists locally.
 func (c *Client) ImageExists(ctx context.Context, imageTag string) (bool, error) {
 	_, _, err := c.cli.ImageInspectWithRaw(ctx, imageTag)
 	if err != nil {
@@ -57,16 +58,16 @@ func (c *Client) ImageExists(ctx context.Context, imageTag string) (bool, error)
 	return true, nil
 }
 
-// CompilationConfig holds configuration for a compilation container
+// CompilationConfig holds configuration for a compilation container.
 type CompilationConfig struct {
-	ImageTag      string
-	SourceCode    string
-	WorkDir       string
-	Env           []string
+	ImageTag        string
+	SourceCode      string
+	WorkDir         string
+	Env             []string
 	SecurityOptPath string // Path to seccomp profile
 }
 
-// CompilationOutput holds the output from a compilation
+// CompilationOutput holds the output from a compilation.
 type CompilationOutput struct {
 	Stdout   string
 	Stderr   string
@@ -75,7 +76,7 @@ type CompilationOutput struct {
 	TimedOut bool
 }
 
-// RunCompilation creates and runs a secure container for compilation
+// RunCompilation creates and runs a secure container for compilation.
 func (c *Client) RunCompilation(ctx context.Context, config CompilationConfig) (*CompilationOutput, error) {
 	startTime := time.Now()
 
@@ -89,9 +90,9 @@ func (c *Client) RunCompilation(ctx context.Context, config CompilationConfig) (
 		return nil, fmt.Errorf("failed to create container: %w", err)
 	}
 
-	// Ensure cleanup
+	// Ensure cleanup - use context without cancel to allow cleanup even if parent context is cancelled
 	defer func() {
-		cleanupCtx := context.Background()
+		cleanupCtx := context.WithoutCancel(ctx)
 		c.cli.ContainerRemove(cleanupCtx, containerID, container.RemoveOptions{
 			Force:         true,
 			RemoveVolumes: true,
@@ -119,12 +120,13 @@ func (c *Client) RunCompilation(ctx context.Context, config CompilationConfig) (
 	case <-ctx.Done():
 		// Timeout occurred - kill the container
 		timedOut = true
-		killCtx := context.Background()
+		killCtx := context.WithoutCancel(ctx)
 		c.cli.ContainerKill(killCtx, containerID, "SIGKILL")
 	}
 
-	// Collect output
-	stdout, stderr, err := c.collectOutput(context.Background(), containerID)
+	// Collect output - use context without cancel to ensure we can collect output even after timeout
+	outputCtx := context.WithoutCancel(ctx)
+	stdout, stderr, err := c.collectOutput(outputCtx, containerID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to collect output: %w", err)
 	}
@@ -140,7 +142,7 @@ func (c *Client) RunCompilation(ctx context.Context, config CompilationConfig) (
 	}, nil
 }
 
-// createSecureContainer creates a container with all security constraints
+// createSecureContainer creates a container with all security constraints.
 func (c *Client) createSecureContainer(ctx context.Context, config CompilationConfig) (string, error) {
 	// Security options
 	securityOpt := []string{
@@ -149,7 +151,7 @@ func (c *Client) createSecureContainer(ctx context.Context, config CompilationCo
 
 	// Add seccomp profile if provided
 	if config.SecurityOptPath != "" {
-		securityOpt = append(securityOpt, fmt.Sprintf("seccomp=%s", config.SecurityOptPath))
+		securityOpt = append(securityOpt, "seccomp="+config.SecurityOptPath)
 	}
 
 	// Container configuration
@@ -171,7 +173,7 @@ func (c *Client) createSecureContainer(ctx context.Context, config CompilationCo
 			PidsLimit:  func() *int64 { v := int64(MaxPidsLimit); return &v }(),
 		},
 		SecurityOpt:    securityOpt,
-		ReadonlyRootfs: false, // Must be false to copy files before start
+		ReadonlyRootfs: false,           // Must be false to copy files before start
 		CapDrop:        []string{"ALL"}, // Drop all capabilities
 		Tmpfs: map[string]string{
 			"/tmp": "rw,noexec,nosuid,size=64m",
@@ -196,7 +198,7 @@ func (c *Client) createSecureContainer(ctx context.Context, config CompilationCo
 	return resp.ID, nil
 }
 
-// copySourceToContainer copies source code into the container
+// copySourceToContainer copies source code into the container.
 func (c *Client) copySourceToContainer(ctx context.Context, containerID, sourceCode string) error {
 	// Create a tar archive with the source code
 	tarContent, err := createSourceTar(sourceCode, "source.cpp")
@@ -208,7 +210,7 @@ func (c *Client) copySourceToContainer(ctx context.Context, containerID, sourceC
 	return c.cli.CopyToContainer(ctx, containerID, "/workspace", tarContent, container.CopyToContainerOptions{})
 }
 
-// collectOutput retrieves stdout and stderr from the container
+// collectOutput retrieves stdout and stderr from the container.
 func (c *Client) collectOutput(ctx context.Context, containerID string) (string, string, error) {
 	logs, err := c.cli.ContainerLogs(ctx, containerID, container.LogsOptions{
 		ShowStdout: true,
@@ -224,14 +226,14 @@ func (c *Client) collectOutput(ctx context.Context, containerID string) (string,
 	stderrBuf := &limitedWriter{limit: MaxOutputSize}
 
 	// Docker multiplexes stdout/stderr
-	if _, err := stdcopy.StdCopy(stdoutBuf, stderrBuf, logs); err != nil && err != io.EOF {
+	if _, err := stdcopy.StdCopy(stdoutBuf, stderrBuf, logs); err != nil && !errors.Is(err, io.EOF) {
 		return "", "", err
 	}
 
 	return sanitizeOutput(stdoutBuf.String()), sanitizeOutput(stderrBuf.String()), nil
 }
 
-// sanitizeOutput removes potentially dangerous content from output
+// sanitizeOutput removes potentially dangerous content from output.
 func sanitizeOutput(output string) string {
 	// Remove ANSI escape sequences
 	output = removeANSIEscapes(output)
@@ -244,7 +246,7 @@ func sanitizeOutput(output string) string {
 	return output
 }
 
-// removeANSIEscapes removes ANSI escape sequences
+// removeANSIEscapes removes ANSI escape sequences.
 func removeANSIEscapes(s string) string {
 	// Simple implementation - in production, use a library like github.com/acarl005/stripansi
 	result := strings.Builder{}
@@ -267,7 +269,7 @@ func removeANSIEscapes(s string) string {
 	return result.String()
 }
 
-// limitedWriter wraps a strings.Builder with a size limit
+// limitedWriter wraps a strings.Builder with a size limit.
 type limitedWriter struct {
 	strings.Builder
 	limit int

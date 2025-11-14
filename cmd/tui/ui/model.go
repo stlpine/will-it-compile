@@ -16,7 +16,7 @@ import (
 	"github.com/stlpine/will-it-compile/pkg/models"
 )
 
-// ViewState represents the current view
+// ViewState represents the current view.
 type ViewState int
 
 const (
@@ -27,7 +27,7 @@ const (
 	ViewHelp
 )
 
-// JobInfo combines job metadata with its result
+// JobInfo combines job metadata with its result.
 type JobInfo struct {
 	ID        string
 	Language  models.Language
@@ -36,20 +36,20 @@ type JobInfo struct {
 	CreatedAt time.Time
 }
 
-// Model is the main TUI model
+// Model is the main TUI model.
 type Model struct {
-	client       *client.Client
-	apiURL       string
+	client *client.Client
+	apiURL string
 
 	// Current state
-	state        ViewState
-	width        int
-	height       int
+	state  ViewState
+	width  int
+	height int
 
 	// Components
-	editor       textarea.Model
-	spinner      spinner.Model
-	filePicker   filepicker.Model
+	editor     textarea.Model
+	spinner    spinner.Model
+	filePicker filepicker.Model
 
 	// Data
 	sourceCode   string
@@ -63,14 +63,14 @@ type Model struct {
 	isCompiling  bool
 
 	// Status
-	statusMsg    string
-	errorMsg     string
+	statusMsg string
+	errorMsg  string
 
 	// Config
-	autoRefresh  bool
+	autoRefresh bool
 }
 
-// NewModel creates a new TUI model
+// NewModel creates a new TUI model.
 func NewModel(apiURL string) Model {
 	ta := textarea.New()
 	ta.Placeholder = "Enter your code here or press 'f' to load from file..."
@@ -101,7 +101,7 @@ func NewModel(apiURL string) Model {
 	}
 }
 
-// Init initializes the model
+// Init initializes the model.
 func (m Model) Init() tea.Cmd {
 	return tea.Batch(
 		textarea.Blink,
@@ -111,7 +111,7 @@ func (m Model) Init() tea.Cmd {
 	)
 }
 
-// Messages
+// Messages.
 type (
 	healthCheckMsg struct {
 		err error
@@ -141,7 +141,7 @@ type (
 	}
 )
 
-// Update handles messages
+// Update handles messages.
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	var cmd tea.Cmd
@@ -171,9 +171,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "tab":
 			// Toggle between editor and history
-			if m.state == ViewEditor {
+			switch m.state {
+			case ViewEditor:
 				m.state = ViewHistory
-			} else if m.state == ViewHistory {
+			case ViewHistory:
 				m.state = ViewEditor
 			}
 			return m, nil
@@ -269,7 +270,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.errorMsg = fmt.Sprintf("Failed to load file: %v", msg.err)
 		} else {
 			m.editor.SetValue(msg.content)
-			m.statusMsg = fmt.Sprintf("Loaded file: %s", msg.path)
+			m.statusMsg = "Loaded file: " + msg.path
 		}
 		m.state = ViewEditor
 
@@ -291,7 +292,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-// View renders the UI
+// View renders the UI.
 func (m Model) View() string {
 	if m.width == 0 {
 		return "Initializing..."
@@ -402,7 +403,7 @@ func (m Model) renderStatusBar() string {
 		return statusBarSuccessStyle.Width(m.width).Render(bar)
 	}
 
-	right = fmt.Sprintf(" Ready ")
+	right = " Ready "
 	bar := statusBarStyle.Render(left) + statusBarStyle.Render(right)
 	return statusBarStyle.Width(m.width).Render(bar)
 }

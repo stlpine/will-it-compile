@@ -22,7 +22,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create server: %v", err)
 	}
-	defer server.Close()
+	defer func() {
+		if err := server.Close(); err != nil {
+			log.Printf("Error closing server: %v", err)
+		}
+	}()
 
 	// Create Echo instance with rate limiting enabled
 	e := api.NewEchoServer(server, true)

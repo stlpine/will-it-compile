@@ -87,6 +87,14 @@ lint: ## Run golangci-lint
 	@which golangci-lint > /dev/null || (echo "golangci-lint not installed. Install it from https://golangci-lint.run/usage/install/" && exit 1)
 	golangci-lint run ./...
 
+lint-fix: ## Run golangci-lint with auto-fix
+	@which golangci-lint > /dev/null || (echo "golangci-lint not installed. Install it from https://golangci-lint.run/usage/install/" && exit 1)
+	golangci-lint run --fix ./...
+
+lint-verbose: ## Run golangci-lint with verbose output
+	@which golangci-lint > /dev/null || (echo "golangci-lint not installed. Install it from https://golangci-lint.run/usage/install/" && exit 1)
+	golangci-lint run -v ./...
+
 dev: docker-build ## Set up development environment
 	@echo "Development environment ready!"
 	@echo "Run 'make run' to start the server"

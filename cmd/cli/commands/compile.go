@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,6 +14,12 @@ import (
 	"github.com/stlpine/will-it-compile/internal/compiler"
 	"github.com/stlpine/will-it-compile/internal/runtime/docker"
 	"github.com/stlpine/will-it-compile/pkg/models"
+)
+
+// Sentinel errors for compile command.
+var (
+	ErrCompilationFailed  = errors.New("compilation failed")
+	ErrUnsupportedFileExt = errors.New("unsupported file extension")
 )
 
 var compileCmd = &cobra.Command{
@@ -39,9 +46,9 @@ resource limits and no network access.`,
 }
 
 var (
-	compileStandard  string
-	compileCompiler  string
-	compileTimeout   int
+	compileStandard   string
+	compileCompiler   string
+	compileTimeout    int
 	compileShowStdout bool
 	compileShowStderr bool
 )
@@ -140,7 +147,7 @@ func runCompile(cmd *cobra.Command, args []string) error {
 		}
 	} else {
 		printError("compilation error: %s", result.Error)
-		return fmt.Errorf("compilation failed")
+		return ErrCompilationFailed
 	}
 
 	// Show stdout
@@ -161,13 +168,13 @@ func runCompile(cmd *cobra.Command, args []string) error {
 
 	// Exit with error if compilation failed
 	if !result.Compiled {
-		return fmt.Errorf("compilation failed")
+		return ErrCompilationFailed
 	}
 
 	return nil
 }
 
-// detectLanguage detects the programming language from file extension
+// detectLanguage detects the programming language from file extension.
 func detectLanguage(filePath string) (models.Language, error) {
 	ext := filepath.Ext(filePath)
 
@@ -177,6 +184,6 @@ func detectLanguage(filePath string) (models.Language, error) {
 	case ".c":
 		return models.LanguageC, nil
 	default:
-		return "", fmt.Errorf("unsupported file extension: %s (supported: .cpp, .cc, .cxx, .c++, .c)", ext)
+		return "", fmt.Errorf("%w: %s (supported: .cpp, .cc, .cxx, .c++, .c)", ErrUnsupportedFileExt, ext)
 	}
 }

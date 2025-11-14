@@ -3,7 +3,7 @@ package ui
 import "github.com/charmbracelet/lipgloss"
 
 var (
-	// Colors
+	// Colors.
 	primaryColor   = lipgloss.Color("39")  // Blue
 	successColor   = lipgloss.Color("42")  // Green
 	errorColor     = lipgloss.Color("196") // Red
@@ -11,7 +11,7 @@ var (
 	mutedColor     = lipgloss.Color("241") // Gray
 	highlightColor = lipgloss.Color("205") // Pink
 
-	// Base styles
+	// Base styles.
 	titleStyle = lipgloss.NewStyle().
 			Bold(true).
 			Foreground(primaryColor).
@@ -21,7 +21,7 @@ var (
 			Foreground(mutedColor).
 			Italic(true)
 
-	// Box styles
+		// Box styles.
 	boxStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(primaryColor).
@@ -32,7 +32,7 @@ var (
 			BorderForeground(highlightColor).
 			Padding(1, 2)
 
-	// Status styles
+		// Status styles.
 	successStyle = lipgloss.NewStyle().
 			Foreground(successColor).
 			Bold(true)
@@ -48,7 +48,7 @@ var (
 	mutedStyle = lipgloss.NewStyle().
 			Foreground(mutedColor)
 
-	// Button styles
+		// Button styles.
 	activeButtonStyle = lipgloss.NewStyle().
 				Background(primaryColor).
 				Foreground(lipgloss.Color("0")).
@@ -60,7 +60,7 @@ var (
 				Foreground(lipgloss.Color("0")).
 				Padding(0, 2)
 
-	// Tab styles
+		// Tab styles.
 	activeTabStyle = lipgloss.NewStyle().
 			Border(lipgloss.Border{
 			Top:    "─",
@@ -82,7 +82,7 @@ var (
 		BorderForeground(mutedColor).
 		Padding(0, 1)
 
-	// Code editor styles
+		// Code editor styles.
 	editorStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(primaryColor).
@@ -95,7 +95,7 @@ var (
 				Padding(1).
 				Width(80)
 
-	// List styles
+		// List styles.
 	selectedItemStyle = lipgloss.NewStyle().
 				Foreground(highlightColor).
 				Bold(true).
@@ -104,7 +104,7 @@ var (
 	normalItemStyle = lipgloss.NewStyle().
 			PaddingLeft(4)
 
-	// Help styles
+		// Help styles.
 	helpStyle = lipgloss.NewStyle().
 			Foreground(mutedColor).
 			Italic(true).
@@ -114,7 +114,7 @@ var (
 			Foreground(primaryColor).
 			Bold(true)
 
-	// Status bar
+		// Status bar.
 	statusBarStyle = lipgloss.NewStyle().
 			Background(primaryColor).
 			Foreground(lipgloss.Color("0")).

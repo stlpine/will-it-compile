@@ -8,7 +8,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
-// NewEchoServer creates a new Echo instance configured with the Server handlers
+// NewEchoServer creates a new Echo instance configured with the Server handlers.
 func NewEchoServer(server *Server, withRateLimit bool) *echo.Echo {
 	e := echo.New()
 	e.HideBanner = true

@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// createSourceTar creates a tar archive containing the source code
+// createSourceTar creates a tar archive containing the source code.
 func createSourceTar(sourceCode, filename string) (io.Reader, error) {
 	buf := new(bytes.Buffer)
 	tw := tar.NewWriter(buf)
@@ -15,7 +15,7 @@ func createSourceTar(sourceCode, filename string) (io.Reader, error) {
 	// Create tar header
 	header := &tar.Header{
 		Name:    filename,
-		Mode:    0644,
+		Mode:    0o644,
 		Size:    int64(len(sourceCode)),
 		ModTime: time.Now(),
 	}

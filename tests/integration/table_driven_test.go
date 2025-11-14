@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestCompilationScenarios uses table-driven tests to cover multiple scenarios
+// TestCompilationScenarios uses table-driven tests to cover multiple scenarios.
 func TestCompilationScenarios(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
@@ -151,7 +151,7 @@ int main() {
 	}
 
 	for _, tc := range testCases {
-		tc := tc // capture range variable
+		// capture range variable
 		t.Run(tc.name, func(t *testing.T) {
 			// Each test can run in parallel since they use independent servers
 			t.Parallel()
@@ -218,7 +218,7 @@ int main() {
 }
 
 // TestRequestValidation uses table-driven tests for request validation
-// Note: The API accepts requests (returns 202) and validates them during processing
+// Note: The API accepts requests (returns 202) and validates them during processing.
 func TestRequestValidation(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping validation test in short mode")
@@ -269,7 +269,6 @@ func TestRequestValidation(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -317,7 +316,7 @@ func TestRequestValidation(t *testing.T) {
 	}
 }
 
-// TestEnvironmentSpecs uses table-driven tests to verify environment specifications
+// TestEnvironmentSpecs uses table-driven tests to verify environment specifications.
 func TestEnvironmentSpecs(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
@@ -339,7 +338,6 @@ func TestEnvironmentSpecs(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			server, err := api.NewServer()
 			require.NoError(t, err, "Failed to create server")

@@ -6,7 +6,7 @@ import (
 )
 
 // CompilationRuntime abstracts the execution environment for code compilation
-// This allows the same code to work with Docker (local dev) or Kubernetes (production)
+// This allows the same code to work with Docker (local dev) or Kubernetes (production).
 type CompilationRuntime interface {
 	// Compile runs code compilation in an isolated environment
 	Compile(ctx context.Context, config CompilationConfig) (*CompilationOutput, error)
@@ -18,7 +18,7 @@ type CompilationRuntime interface {
 	Close() error
 }
 
-// CompilationConfig holds configuration for a compilation job
+// CompilationConfig holds configuration for a compilation job.
 type CompilationConfig struct {
 	// JobID is a unique identifier for this compilation
 	JobID string
@@ -39,7 +39,7 @@ type CompilationConfig struct {
 	Timeout time.Duration
 }
 
-// CompilationOutput holds the result of a compilation
+// CompilationOutput holds the result of a compilation.
 type CompilationOutput struct {
 	// Stdout is the standard output from the compilation
 	Stdout string

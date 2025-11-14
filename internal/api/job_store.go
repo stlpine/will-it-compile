@@ -15,7 +15,7 @@ type jobStore struct {
 	results map[string]models.CompilationResult
 }
 
-// newJobStore creates a new in-memory job store
+// newJobStore creates a new in-memory job store.
 func newJobStore() *jobStore {
 	return &jobStore{
 		jobs:    make(map[string]models.CompilationJob),
@@ -23,14 +23,14 @@ func newJobStore() *jobStore {
 	}
 }
 
-// Store saves or updates a job
+// Store saves or updates a job.
 func (s *jobStore) Store(job models.CompilationJob) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.jobs[job.ID] = job
 }
 
-// Get retrieves a job by ID
+// Get retrieves a job by ID.
 func (s *jobStore) Get(jobID string) (models.CompilationJob, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -38,14 +38,14 @@ func (s *jobStore) Get(jobID string) (models.CompilationJob, bool) {
 	return job, exists
 }
 
-// StoreResult saves a compilation result
+// StoreResult saves a compilation result.
 func (s *jobStore) StoreResult(jobID string, result models.CompilationResult) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.results[jobID] = result
 }
 
-// GetResult retrieves a compilation result by job ID
+// GetResult retrieves a compilation result by job ID.
 func (s *jobStore) GetResult(jobID string) (models.CompilationResult, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

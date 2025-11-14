@@ -1,15 +1,21 @@
 package runtime
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
-	pkgruntime "github.com/stlpine/will-it-compile/pkg/runtime"
 	dockerruntime "github.com/stlpine/will-it-compile/internal/runtime/docker"
 	k8sruntime "github.com/stlpine/will-it-compile/internal/runtime/kubernetes"
+	pkgruntime "github.com/stlpine/will-it-compile/pkg/runtime"
 )
 
-// RuntimeType represents the type of runtime to use
+// Sentinel errors for runtime factory.
+var (
+	ErrUnknownRuntimeType = errors.New("unknown runtime type")
+)
+
+// RuntimeType represents the type of runtime to use.
 type RuntimeType string
 
 const (
@@ -19,7 +25,7 @@ const (
 )
 
 // NewRuntime creates a new CompilationRuntime based on the specified type
-// If runtimeType is "auto", it will auto-detect the environment
+// If runtimeType is "auto", it will auto-detect the environment.
 func NewRuntime(runtimeType RuntimeType, namespace string) (pkgruntime.CompilationRuntime, error) {
 	switch runtimeType {
 	case RuntimeTypeDocker:
@@ -38,11 +44,11 @@ func NewRuntime(runtimeType RuntimeType, namespace string) (pkgruntime.Compilati
 		return NewRuntimeAuto(namespace)
 
 	default:
-		return nil, fmt.Errorf("unknown runtime type: %s", runtimeType)
+		return nil, fmt.Errorf("%w: %s", ErrUnknownRuntimeType, runtimeType)
 	}
 }
 
-// NewRuntimeAuto automatically detects the environment and creates the appropriate runtime
+// NewRuntimeAuto automatically detects the environment and creates the appropriate runtime.
 func NewRuntimeAuto(namespace string) (pkgruntime.CompilationRuntime, error) {
 	// Check if running inside Kubernetes
 	// The presence of KUBERNETES_SERVICE_HOST indicates we're in a K8s pod
@@ -64,7 +70,7 @@ func NewRuntimeAuto(namespace string) (pkgruntime.CompilationRuntime, error) {
 	return dockerruntime.NewDockerRuntime()
 }
 
-// GetRuntimeType returns the runtime type that would be selected by auto-detection
+// GetRuntimeType returns the runtime type that would be selected by auto-detection.
 func GetRuntimeType() RuntimeType {
 	if os.Getenv("KUBERNETES_SERVICE_HOST") != "" {
 		return RuntimeTypeKubernetes

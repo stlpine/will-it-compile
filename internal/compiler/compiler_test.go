@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestCompile_Success tests successful compilation
+// TestCompile_Success tests successful compilation.
 func TestCompile_Success(t *testing.T) {
 	mockRuntime := &runtime.MockRuntime{
 		CompileFunc: func(ctx context.Context, config runtime.CompilationConfig) (*runtime.CompilationOutput, error) {
@@ -53,7 +53,7 @@ int main() { return 0; }`
 	assert.Equal(t, "test-job-1", result.JobID)
 }
 
-// TestCompile_CompilationError tests compilation failure
+// TestCompile_CompilationError tests compilation failure.
 func TestCompile_CompilationError(t *testing.T) {
 	mockRuntime := &runtime.MockRuntime{
 		CompileFunc: func(ctx context.Context, config runtime.CompilationConfig) (*runtime.CompilationOutput, error) {
@@ -89,7 +89,7 @@ func TestCompile_CompilationError(t *testing.T) {
 	assert.Contains(t, result.Stderr, "error", "Expected error in stderr")
 }
 
-// TestCompile_Timeout tests compilation timeout
+// TestCompile_Timeout tests compilation timeout.
 func TestCompile_Timeout(t *testing.T) {
 	mockRuntime := &runtime.MockRuntime{
 		CompileFunc: func(ctx context.Context, config runtime.CompilationConfig) (*runtime.CompilationOutput, error) {
@@ -124,11 +124,11 @@ func TestCompile_Timeout(t *testing.T) {
 	assert.Equal(t, "compilation timeout", result.Error)
 }
 
-// TestCompile_RuntimeError tests runtime errors
+// TestCompile_RuntimeError tests runtime errors.
 func TestCompile_RuntimeError(t *testing.T) {
 	mockRuntime := &runtime.MockRuntime{
 		CompileFunc: func(ctx context.Context, config runtime.CompilationConfig) (*runtime.CompilationOutput, error) {
-			return nil, errors.New("failed to create container")
+			return nil, errors.New("failed to create container") //nolint:err113 // mock error for testing
 		},
 	}
 
@@ -153,7 +153,7 @@ func TestCompile_RuntimeError(t *testing.T) {
 	assert.Contains(t, result.Error, "failed to create container")
 }
 
-// TestValidateRequest tests request validation using table-driven tests
+// TestValidateRequest tests request validation using table-driven tests.
 func TestValidateRequest(t *testing.T) {
 	compiler := NewCompilerWithRuntime(&runtime.MockRuntime{})
 
@@ -211,7 +211,6 @@ func TestValidateRequest(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			err := compiler.validateRequest(tc.request)
 
@@ -225,14 +224,14 @@ func TestValidateRequest(t *testing.T) {
 	}
 }
 
-// TestSelectEnvironment tests environment selection
+// TestSelectEnvironment tests environment selection.
 func TestSelectEnvironment(t *testing.T) {
 	compiler := NewCompilerWithRuntime(&runtime.MockRuntime{})
 
 	testCases := []struct {
-		name            string
-		request         models.CompilationRequest
-		expectError     bool
+		name             string
+		request          models.CompilationRequest
+		expectError      bool
 		expectedImageTag string
 		expectedStandard string
 	}{
@@ -285,7 +284,6 @@ func TestSelectEnvironment(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			env, err := compiler.selectEnvironment(tc.request)
 
@@ -302,7 +300,7 @@ func TestSelectEnvironment(t *testing.T) {
 	}
 }
 
-// TestGetSupportedEnvironments tests the environments list
+// TestGetSupportedEnvironments tests the environments list.
 func TestGetSupportedEnvironments(t *testing.T) {
 	compiler := NewCompilerWithRuntime(&runtime.MockRuntime{})
 
@@ -326,7 +324,7 @@ func TestGetSupportedEnvironments(t *testing.T) {
 	assert.True(t, found, "Expected C++ environment in list")
 }
 
-// TestCompile_InvalidBase64 tests invalid base64 encoding
+// TestCompile_InvalidBase64 tests invalid base64 encoding.
 func TestCompile_InvalidBase64(t *testing.T) {
 	mockRuntime := &runtime.MockRuntime{}
 	compiler := NewCompilerWithRuntime(mockRuntime)
@@ -346,7 +344,7 @@ func TestCompile_InvalidBase64(t *testing.T) {
 	assert.Contains(t, result.Error, "invalid base64")
 }
 
-// TestCompile_VerifyRuntimeConfig tests that correct config is passed to runtime
+// TestCompile_VerifyRuntimeConfig tests that correct config is passed to runtime.
 func TestCompile_VerifyRuntimeConfig(t *testing.T) {
 	var capturedConfig runtime.CompilationConfig
 
