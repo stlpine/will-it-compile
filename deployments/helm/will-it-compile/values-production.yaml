@@ -1,0 +1,124 @@
+# Production values for will-it-compile
+# This overrides default values for production deployment
+
+replicaCount: 3
+
+image:
+  repository: will-it-compile/api
+  pullPolicy: Always
+  tag: "v1.0.0"  # Use specific version, not 'latest'
+
+compilerImages:
+  cpp:
+    repository: will-it-compile/cpp-gcc
+    tag: "13-alpine"
+    pullPolicy: Always
+
+serviceAccount:
+  create: true
+  annotations:
+    # Add any cloud-specific annotations
+    # iam.gke.io/gcp-service-account: will-it-compile@project.iam.gserviceaccount.com
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: "/metrics"
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: compile.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: will-it-compile-tls
+      hosts:
+        - compile.example.com
+
+resources:
+  limits:
+    cpu: 2000m
+    memory: 1Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+networkPolicy:
+  enabled: true
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8080
+  egress:
+    # DNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+        - podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+    # Kubernetes API
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 443
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+# Production-specific affinity rules
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values:
+                  - will-it-compile
+          topologyKey: kubernetes.io/hostname
+
+# Node selector for dedicated nodes (optional)
+# nodeSelector:
+#   workload: compilation
+
+# Tolerations for tainted nodes (optional)
+# tolerations:
+#   - key: "workload"
+#     operator: "Equal"
+#     value: "compilation"
+#     effect: "NoSchedule"

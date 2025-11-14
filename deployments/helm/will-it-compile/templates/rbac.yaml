@@ -1,0 +1,45 @@
+{{- if .Values.serviceAccount.create -}}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "will-it-compile.fullname" . }}-compiler
+  labels:
+    {{- include "will-it-compile.labels" . | nindent 4 }}
+rules:
+  # Jobs permissions - for creating and managing compilation jobs
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "get", "list", "watch", "delete"]
+
+  # ConfigMaps permissions - for storing source code
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["create", "get", "delete"]
+
+  # Pods permissions - for getting compilation output
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+
+  # Pod logs permissions - for retrieving compilation results
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "will-it-compile.fullname" . }}-compiler-binding
+  labels:
+    {{- include "will-it-compile.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "will-it-compile.fullname" . }}-compiler
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "will-it-compile.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

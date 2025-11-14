@@ -1,0 +1,13 @@
+apiVersion: v2
+name: will-it-compile
+description: A secure, cloud-ready service for checking code compilation in isolated environments
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - compiler
+  - code-validation
+  - security
+maintainers:
+  - name: will-it-compile
+home: https://github.com/stlpine/will-it-compile
