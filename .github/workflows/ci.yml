@@ -1,0 +1,185 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: # Allow manual triggering
+
+# Auto-cancel previous runs when new commits are pushed to main
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Download dependencies
+        run: make deps
+
+      - name: Check formatting
+        run: |
+          go fmt ./...
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Code is not formatted. Please run 'make fmt'"
+            git diff
+            exit 1
+          fi
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          args: --timeout=5m
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Download dependencies
+        run: make deps
+
+      - name: Build Docker images
+        run: make docker-build
+
+      - name: Run tests with coverage
+        run: make test-coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.html
+          retention-days: 30
+
+      - name: Upload coverage data
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-data
+          path: coverage.out
+          retention-days: 30
+
+  build:
+    name: Build All Components
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Download dependencies
+        run: make deps
+
+      - name: Build all binaries
+        run: make build
+
+      - name: Build Docker images
+        run: make docker-build
+
+      - name: Test Docker images
+        run: make docker-test
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries-${{ github.sha }}
+          path: bin/
+          retention-days: 90
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@master
+        with:
+          args: '-no-fail -fmt sarif -out gosec-results.sarif ./...'
+
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: gosec-results.sarif
+
+  verify:
+    name: Verify Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Verify dependencies
+        run: |
+          go mod download
+          go mod verify
+
+      - name: Check for vulnerabilities
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+
+  success:
+    name: CI Pipeline Success
+    runs-on: ubuntu-latest
+    needs: [lint, test, build, security, verify]
+    if: always()
+    steps:
+      - name: Check if all jobs succeeded
+        run: |
+          if [ "${{ needs.lint.result }}" != "success" ] || \
+             [ "${{ needs.test.result }}" != "success" ] || \
+             [ "${{ needs.build.result }}" != "success" ] || \
+             [ "${{ needs.security.result }}" != "success" ] || \
+             [ "${{ needs.verify.result }}" != "success" ]; then
+            echo "One or more CI jobs failed"
+            exit 1
+          fi
+          echo "✅ All CI checks passed!"
