@@ -68,7 +68,7 @@ This directory contains GitHub Actions workflows for continuous integration and 
 ### GitHub Actions Runners
 
 All workflows use `ubuntu-latest` runners with:
-- Go 1.23
+- Go 1.24
 - Docker support
 - 7GB RAM, 2-core CPU (GitHub-hosted default)
 
@@ -93,7 +93,7 @@ All workflows use Go module caching to speed up builds:
 ```yaml
 uses: actions/setup-go@v5
 with:
-  go-version: '1.23'
+  go-version: '1.24'
   cache: true  # Caches Go modules
 ```
 
