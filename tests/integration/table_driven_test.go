@@ -319,6 +319,10 @@ func TestRequestValidation(t *testing.T) {
 
 // TestEnvironmentSpecs uses table-driven tests to verify environment specifications
 func TestEnvironmentSpecs(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
 	testCases := []struct {
 		name             string
 		expectedLanguage string
