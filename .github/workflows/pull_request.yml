@@ -123,21 +123,3 @@ jobs:
 
       - name: Test Docker images
         run: make docker-test
-
-  status-check:
-    name: All Checks Passed
-    runs-on: ubuntu-latest
-    needs: [lint, test-unit, test-integration, build, docker]
-    if: always()
-    steps:
-      - name: Check if all jobs succeeded
-        run: |
-          if [ "${{ needs.lint.result }}" != "success" ] || \
-             [ "${{ needs.test-unit.result }}" != "success" ] || \
-             [ "${{ needs.test-integration.result }}" != "success" ] || \
-             [ "${{ needs.build.result }}" != "success" ] || \
-             [ "${{ needs.docker.result }}" != "success" ]; then
-            echo "One or more checks failed"
-            exit 1
-          fi
-          echo "All checks passed!"
