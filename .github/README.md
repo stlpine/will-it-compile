@@ -1,12 +1,12 @@
 # GitHub Actions Workflows
 
-This directory contains GitHub Actions workflows for CI/CD automation.
+This directory contains GitHub Actions workflows for continuous integration and code quality checks.
 
 ## Workflows
 
 ### 1. Pull Request Checks (`pull_request.yml`)
 
-**Trigger**: On pull requests to `main` or `develop` branches
+**Trigger**: On pull requests to any branch
 
 **Purpose**: Ensures code quality and functionality before merging
 
@@ -21,11 +21,13 @@ This directory contains GitHub Actions workflows for CI/CD automation.
   - Runs integration tests using `make test-integration`
 - **Build**: Compiles all binaries
   - Builds API server, CLI, and TUI
-  - Uploads binaries as artifacts
+  - Uploads binaries as artifacts (7-day retention)
 - **Docker**: Validates Docker images
   - Builds Docker images
   - Tests Docker images with sample code
 - **Status Check**: Final check to ensure all jobs passed
+
+**Concurrency**: Auto-cancels previous runs when new commits are pushed to the same PR (saves CI resources)
 
 **Usage**: Automatically runs on PR creation and updates
 
@@ -47,7 +49,7 @@ This directory contains GitHub Actions workflows for CI/CD automation.
 - **Build**: Builds all components
   - Compiles all binaries
   - Builds and tests Docker images
-  - Uploads binaries with commit SHA
+  - Uploads binaries with commit SHA (90-day retention)
 - **Security**: Security scanning
   - Runs `gosec` security scanner
   - Uploads SARIF results to GitHub Security
@@ -56,48 +58,11 @@ This directory contains GitHub Actions workflows for CI/CD automation.
   - Checks for vulnerabilities using `govulncheck`
 - **Success**: Final status check
 
+**Concurrency**: Does NOT cancel previous runs - ensures every main branch commit is fully validated
+
 **Artifacts**:
 - Coverage reports (retained for 30 days)
 - Binaries tagged with commit SHA (retained for 90 days)
-
----
-
-### 3. Release (`release.yml`)
-
-**Trigger**: On pushing version tags (e.g., `v1.0.0`, `v2.1.3`)
-
-**Purpose**: Automated release builds and GitHub release creation
-
-**Jobs**:
-- **Test**: Runs full test suite before building release
-- **Build**: Cross-platform binary compilation
-  - Builds for: Linux (amd64, arm64), macOS (amd64, arm64), Windows (amd64)
-  - Creates archives (.tar.gz for Unix, .zip for Windows)
-  - Injects version info, commit SHA, and build date into binaries
-- **Release**: Creates GitHub release
-  - Downloads all built binaries
-  - Generates changelog from git commits
-  - Creates release with downloadable assets
-  - Marks as pre-release for `-rc`, `-beta`, `-alpha` tags
-
-**How to Create a Release**:
-```bash
-# Tag the commit
-git tag -a v1.0.0 -m "Release v1.0.0"
-
-# Push the tag
-git push origin v1.0.0
-
-# GitHub Actions will automatically:
-# 1. Run tests
-# 2. Build binaries for all platforms
-# 3. Create a GitHub release with binaries
-```
-
-**Release Assets**:
-- `will-it-compile-api-{os}-{arch}[.exe].tar.gz` - API server
-- `will-it-compile-{os}-{arch}[.exe].tar.gz` - CLI tool
-- `will-it-compile-tui-{os}-{arch}[.exe].tar.gz` - TUI client
 
 ---
 
@@ -119,7 +84,6 @@ Currently, no secrets are required. The workflows use:
 
 The workflows request minimal permissions:
 - `contents: read` - Read repository contents (default for most workflows)
-- `contents: write` - Write releases (release.yml only)
 - `pull-requests: read` - Read PR info (pull_request.yml only)
 
 ---
@@ -145,10 +109,9 @@ The PR and CI workflows run jobs in parallel where possible:
 
 ### Artifacts
 
-Workflows upload artifacts for debugging and deployment:
+Workflows upload artifacts for debugging and analysis:
 - **PR Workflow**: Binaries (7 days)
 - **CI Workflow**: Binaries (90 days), Coverage reports (30 days)
-- **Release Workflow**: Cross-platform binaries (as release assets)
 
 ---
 
@@ -195,28 +158,25 @@ make build         # Build binaries
 - Increase timeout in workflow (default is 30 seconds per compilation)
 - Review `internal/docker/client.go:23` for `MaxCompilationTime`
 
-### Release Build Fails for Specific Platform
+### Concurrency Cancellation
 
-**Problem**: Cross-compilation fails for certain OS/arch combinations
+**Problem**: PR workflow cancels my run
 
-**Solution**:
-- Check if the platform combination is supported by Go
-- Review the `matrix` strategy in `release.yml`
-- Test locally with: `GOOS=linux GOARCH=arm64 go build ./cmd/api/`
+**Solution**: This is expected behavior. When you push new commits to a PR, the previous workflow run is cancelled to save CI resources. Only the latest commit's workflow will run to completion.
 
 ---
 
 ## Future Enhancements
 
-Potential workflow improvements:
+Potential workflow improvements for later:
 
 - [ ] Add code coverage reporting to PRs (e.g., Codecov)
 - [ ] Deploy to staging environment on main branch
-- [ ] Push Docker images to registry on release
 - [ ] Add performance benchmarking
 - [ ] Scheduled security scans (weekly)
 - [ ] Automated dependency updates (Dependabot)
 - [ ] Slack/Discord notifications for build failures
+- [ ] Release automation (when release strategy is decided)
 
 ---
 
@@ -230,3 +190,4 @@ Potential workflow improvements:
 ---
 
 **Last Updated**: 2025-11-14
+**Workflows**: Pull Request Checks, CI Pipeline
