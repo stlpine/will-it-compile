@@ -52,27 +52,27 @@ func init() {
 
 // isVerbose returns true if verbose flag is set.
 func isVerbose(cmd *cobra.Command) bool {
-	verbose, _ := cmd.Flags().GetBool("verbose")
+	verbose, _ := cmd.Flags().GetBool("verbose") //nolint:errcheck // flag is defined by us
 	return verbose
 }
 
 // isQuiet returns true if quiet flag is set.
 func isQuiet(cmd *cobra.Command) bool {
-	quiet, _ := cmd.Flags().GetBool("quiet")
+	quiet, _ := cmd.Flags().GetBool("quiet") //nolint:errcheck // flag is defined by us
 	return quiet
 }
 
 // printInfo prints informational messages (unless quiet mode).
 func printInfo(cmd *cobra.Command, format string, args ...interface{}) {
 	if !isQuiet(cmd) {
-		fmt.Fprintf(os.Stdout, format+"\n", args...)
+		_, _ = fmt.Fprintf(os.Stdout, format+"\n", args...) //nolint:errcheck // stdout write
 	}
 }
 
 // printVerbose prints verbose messages (only in verbose mode).
 func printVerbose(cmd *cobra.Command, format string, args ...interface{}) {
 	if isVerbose(cmd) {
-		fmt.Fprintf(os.Stdout, "[VERBOSE] "+format+"\n", args...)
+		_, _ = fmt.Fprintf(os.Stdout, "[VERBOSE] "+format+"\n", args...) //nolint:errcheck // stdout write
 	}
 }
 

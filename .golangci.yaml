@@ -1,0 +1,74 @@
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+  go: '1.24'
+
+linters:
+  default: none
+  enable:
+    # Core linters (enabled by default)
+    - errcheck      # Check for unchecked errors
+    - govet         # Vet examines Go source code
+    - ineffassign   # Detect ineffectual assignments
+    - staticcheck   # Advanced static analysis (includes gosimple)
+    - unused        # Find unused code
+
+    # Security
+    - gosec         # Security checker
+
+    # Code quality
+    - misspell      # Fix spelling mistakes
+    - revive        # Fast, configurable linter
+
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+
+    gosec:
+      severity: medium
+      confidence: medium
+      excludes:
+        - G104  # Covered by errcheck
+
+    revive:
+      rules:
+        - name: blank-imports
+        - name: context-as-argument
+        - name: dot-imports
+        - name: error-return
+        - name: error-strings
+        - name: error-naming
+        - name: if-return
+        - name: var-naming
+        - name: unexported-return
+        - name: errorf
+
+  exclusions:
+    rules:
+      # Allow higher complexity in tests
+      - path: _test\.go
+        linters:
+          - errcheck
+          - gosec
+
+formatters:
+  enable:
+    - gci        # Import organization and grouping
+    - gofmt      # Standard Go formatting
+    - gofumpt    # Stricter gofmt
+    - goimports  # Import management
+
+output:
+  formats:
+    text:
+      path: stdout
+      print-linter-name: true
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  fix: false  # Use --fix flag or 'make lint-fix' to enable auto-fix
+

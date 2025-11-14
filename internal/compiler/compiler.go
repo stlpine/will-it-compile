@@ -47,7 +47,7 @@ func NewCompiler() (*Compiler, error) {
 	} else {
 		environments, err = config.ToEnvironmentSpecs()
 		if err != nil {
-			rt.Close()
+			_ = rt.Close() //nolint:errcheck // already in error path
 			return nil, fmt.Errorf("failed to parse environment specs: %w", err)
 		}
 	}
@@ -59,7 +59,7 @@ func NewCompiler() (*Compiler, error) {
 
 	// Verify required images exist at startup
 	if err := compiler.verifyImages(context.Background()); err != nil {
-		rt.Close()
+		_ = rt.Close() //nolint:errcheck // already in error path
 		return nil, err
 	}
 

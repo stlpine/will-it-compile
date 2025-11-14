@@ -425,6 +425,9 @@ make fmt
 
 # Run linter (requires golangci-lint)
 make lint
+
+# Run linter with auto-fix
+make lint-fix
 ```
 
 ## Security

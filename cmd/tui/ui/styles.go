@@ -17,7 +17,7 @@ var (
 			Foreground(primaryColor).
 			MarginBottom(1)
 
-	subtitleStyle = lipgloss.NewStyle().
+	subtitleStyle = lipgloss.NewStyle(). //nolint:unused // reserved for future TUI features
 			Foreground(mutedColor).
 			Italic(true)
 
@@ -27,7 +27,7 @@ var (
 			BorderForeground(primaryColor).
 			Padding(1, 2)
 
-	activeBoxStyle = lipgloss.NewStyle().
+	activeBoxStyle = lipgloss.NewStyle(). //nolint:unused // reserved for future TUI features
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(highlightColor).
 			Padding(1, 2)
@@ -61,7 +61,7 @@ var (
 				Padding(0, 2)
 
 		// Tab styles.
-	activeTabStyle = lipgloss.NewStyle().
+	activeTabStyle = lipgloss.NewStyle(). //nolint:unused // reserved for future TUI features
 			Border(lipgloss.Border{
 			Top:    "─",
 			Bottom: " ",
@@ -72,7 +72,7 @@ var (
 		Padding(0, 1).
 		Bold(true)
 
-	inactiveTabStyle = lipgloss.NewStyle().
+	inactiveTabStyle = lipgloss.NewStyle(). //nolint:unused // reserved for future TUI features
 				Border(lipgloss.Border{
 			Top:    "─",
 			Bottom: "─",
@@ -83,7 +83,7 @@ var (
 		Padding(0, 1)
 
 		// Code editor styles.
-	editorStyle = lipgloss.NewStyle().
+	editorStyle = lipgloss.NewStyle(). //nolint:unused // reserved for future TUI features
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(primaryColor).
 			Padding(1).

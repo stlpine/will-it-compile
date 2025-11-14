@@ -76,7 +76,7 @@ func runCompile(cmd *cobra.Command, args []string) error {
 	printVerbose(cmd, "Reading source file: %s", filePath)
 
 	// Read source code
-	sourceCode, err := os.ReadFile(filePath)
+	sourceCode, err := os.ReadFile(filePath) //nolint:gosec // G304: user-specified source file via CLI argument
 	if err != nil {
 		printError("failed to read file: %v", err)
 		return err
@@ -117,7 +117,11 @@ func runCompile(cmd *cobra.Command, args []string) error {
 		printError("failed to create Docker runtime: %v", err)
 		return err
 	}
-	defer dockerRuntime.Close()
+	defer func() {
+		if err := dockerRuntime.Close(); err != nil {
+			printError("failed to close Docker runtime: %v", err)
+		}
+	}()
 
 	// Create compiler
 	comp := compiler.NewCompilerWithRuntime(dockerRuntime)

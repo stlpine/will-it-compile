@@ -52,7 +52,6 @@ type Model struct {
 	filePicker filepicker.Model
 
 	// Data
-	sourceCode   string
 	language     models.Language
 	environments []models.EnvironmentSpec
 
@@ -85,7 +84,7 @@ func NewModel(apiURL string) Model {
 
 	fp := filepicker.New()
 	fp.AllowedTypes = []string{".cpp", ".cc", ".cxx", ".c++", ".c", ".go", ".rs"}
-	fp.Height = 15
+	fp.SetHeight(15)
 
 	return Model{
 		client:       client.NewClient(apiURL),
@@ -377,7 +376,7 @@ func (m Model) pollJob(jobID string) tea.Cmd {
 
 func (m Model) loadFile(path string) tea.Cmd {
 	return func() tea.Msg {
-		content, err := os.ReadFile(path)
+		content, err := os.ReadFile(path) //nolint:gosec // G304: user-selected file from file picker
 		if err != nil {
 			return fileSelectedMsg{path: path, err: err}
 		}

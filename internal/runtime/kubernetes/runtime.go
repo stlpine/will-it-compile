@@ -302,7 +302,7 @@ func (k *KubernetesRuntime) waitForJobCompletion(ctx context.Context, jobName st
 			if job.Status.Failed > 0 {
 				// Use context without cancel to allow output collection even if parent context is cancelled
 				outputCtx := context.WithoutCancel(ctx)
-				output, _ := k.getJobOutput(outputCtx, jobName)
+				output, _ := k.getJobOutput(outputCtx, jobName) //nolint:errcheck // best effort output collection
 				if output == nil {
 					output = &runtime.CompilationOutput{
 						Stderr:   "Job failed to execute",
@@ -336,7 +336,7 @@ func (k *KubernetesRuntime) getJobOutput(ctx context.Context, jobName string) (*
 
 	// Get container exit code
 	exitCode := 0
-	if pod.Status.ContainerStatuses != nil && len(pod.Status.ContainerStatuses) > 0 {
+	if len(pod.Status.ContainerStatuses) > 0 {
 		if terminated := pod.Status.ContainerStatuses[0].State.Terminated; terminated != nil {
 			exitCode = int(terminated.ExitCode)
 		}
@@ -355,14 +355,14 @@ func (k *KubernetesRuntime) getJobOutput(ctx context.Context, jobName string) (*
 			ExitCode: exitCode,
 		}, nil
 	}
-	defer logStream.Close()
+	defer logStream.Close() //nolint:errcheck // read-only operation
 
 	// Read logs with size limit
 	buf := make([]byte, MaxOutputSize)
-	n, _ := io.ReadFull(logStream, buf)
+	n, _ := io.ReadFull(logStream, buf) //nolint:errcheck // best effort read
 	if n == 0 {
 		// Try reading whatever is available
-		n, _ = logStream.Read(buf)
+		n, _ = logStream.Read(buf) //nolint:errcheck // best effort read
 	}
 
 	output := string(buf[:n])
@@ -381,13 +381,13 @@ func (k *KubernetesRuntime) cleanup(ctx context.Context, jobID string) {
 
 	// Delete job (pods will be deleted automatically due to TTL)
 	jobName := "compile-" + jobID
-	k.clientset.BatchV1().Jobs(k.namespace).Delete(ctx, jobName, metav1.DeleteOptions{
+	_ = k.clientset.BatchV1().Jobs(k.namespace).Delete(ctx, jobName, metav1.DeleteOptions{ //nolint:errcheck // best effort cleanup
 		PropagationPolicy: &deletePolicy,
 	})
 
 	// Delete configmap
 	configMapName := "source-" + jobID
-	k.clientset.CoreV1().ConfigMaps(k.namespace).Delete(ctx, configMapName, metav1.DeleteOptions{})
+	_ = k.clientset.CoreV1().ConfigMaps(k.namespace).Delete(ctx, configMapName, metav1.DeleteOptions{}) //nolint:errcheck // best effort cleanup
 }
 
 // convertEnv converts []string environment variables to []corev1.EnvVar.

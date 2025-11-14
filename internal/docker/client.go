@@ -11,6 +11,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/errdefs"
 	"github.com/docker/docker/pkg/stdcopy"
 )
 
@@ -48,9 +49,9 @@ func (c *Client) Close() error {
 
 // ImageExists checks if a Docker image exists locally.
 func (c *Client) ImageExists(ctx context.Context, imageTag string) (bool, error) {
-	_, _, err := c.cli.ImageInspectWithRaw(ctx, imageTag)
+	_, err := c.cli.ImageInspect(ctx, imageTag)
 	if err != nil {
-		if client.IsErrNotFound(err) {
+		if errdefs.IsNotFound(err) { //nolint:staticcheck // SA1019: errdefs.IsNotFound is correct for Docker client
 			return false, nil
 		}
 		return false, fmt.Errorf("failed to inspect image: %w", err)
@@ -93,7 +94,7 @@ func (c *Client) RunCompilation(ctx context.Context, config CompilationConfig) (
 	// Ensure cleanup - use context without cancel to allow cleanup even if parent context is cancelled
 	defer func() {
 		cleanupCtx := context.WithoutCancel(ctx)
-		c.cli.ContainerRemove(cleanupCtx, containerID, container.RemoveOptions{
+		_ = c.cli.ContainerRemove(cleanupCtx, containerID, container.RemoveOptions{ //nolint:errcheck // best effort cleanup
 			Force:         true,
 			RemoveVolumes: true,
 		})
@@ -121,7 +122,7 @@ func (c *Client) RunCompilation(ctx context.Context, config CompilationConfig) (
 		// Timeout occurred - kill the container
 		timedOut = true
 		killCtx := context.WithoutCancel(ctx)
-		c.cli.ContainerKill(killCtx, containerID, "SIGKILL")
+		_ = c.cli.ContainerKill(killCtx, containerID, "SIGKILL") //nolint:errcheck // best effort kill
 	}
 
 	// Collect output - use context without cancel to ensure we can collect output even after timeout
@@ -191,7 +192,7 @@ func (c *Client) createSecureContainer(ctx context.Context, config CompilationCo
 	// Copy source code into container
 	if err := c.copySourceToContainer(ctx, resp.ID, config.SourceCode); err != nil {
 		// Cleanup on error
-		c.cli.ContainerRemove(context.Background(), resp.ID, container.RemoveOptions{Force: true})
+		_ = c.cli.ContainerRemove(context.Background(), resp.ID, container.RemoveOptions{Force: true}) //nolint:errcheck // already in error path
 		return "", fmt.Errorf("failed to copy source code: %w", err)
 	}
 
@@ -219,7 +220,7 @@ func (c *Client) collectOutput(ctx context.Context, containerID string) (string,
 	if err != nil {
 		return "", "", err
 	}
-	defer logs.Close()
+	defer logs.Close() //nolint:errcheck // read-only operation
 
 	// Use limited readers to prevent excessive output
 	stdoutBuf := &limitedWriter{limit: MaxOutputSize}

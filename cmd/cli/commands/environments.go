@@ -51,7 +51,11 @@ func runEnvironments(cmd *cobra.Command, args []string) error {
 		printError("failed to create Docker runtime: %v", err)
 		return err
 	}
-	defer dockerRuntime.Close()
+	defer func() {
+		if err := dockerRuntime.Close(); err != nil {
+			printError("failed to close Docker runtime: %v", err)
+		}
+	}()
 
 	// Create compiler
 	comp := compiler.NewCompilerWithRuntime(dockerRuntime)

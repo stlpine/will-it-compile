@@ -53,10 +53,10 @@ func (c *Client) SubmitCompilation(ctx context.Context, req models.CompilationRe
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // standard practice for HTTP client
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body) //nolint:errcheck // best effort error message
 		return nil, fmt.Errorf("%w (status %d): %s", ErrAPIError, resp.StatusCode, string(body))
 	}
 
@@ -87,14 +87,14 @@ func (c *Client) GetJob(ctx context.Context, jobID string) (*JobStatus, error) {
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // standard practice for HTTP client
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, ErrJobNotFound
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body) //nolint:errcheck // best effort error message
 		return nil, fmt.Errorf("%w (status %d): %s", ErrAPIError, resp.StatusCode, string(body))
 	}
 
@@ -138,10 +138,10 @@ func (c *Client) GetEnvironments(ctx context.Context) ([]models.EnvironmentSpec,
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // standard practice for HTTP client
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body) //nolint:errcheck // best effort error message
 		return nil, fmt.Errorf("%w (status %d): %s", ErrAPIError, resp.StatusCode, string(body))
 	}
 
@@ -167,7 +167,7 @@ func (c *Client) HealthCheck(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // standard practice for HTTP client
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("%w (status %d)", ErrHealthCheckFailed, resp.StatusCode)

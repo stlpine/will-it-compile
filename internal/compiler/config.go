@@ -61,7 +61,7 @@ type RateLimitsConfig struct {
 
 // LoadConfig loads the configuration from a YAML file.
 func LoadConfig(configPath string) (*Config, error) {
-	data, err := os.ReadFile(configPath)
+	data, err := os.ReadFile(configPath) //nolint:gosec // G304: config file path validated in findConfigFile()
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
@@ -181,7 +181,7 @@ func GetDefaultConfigPath() string {
 
 	for _, candidate := range candidates {
 		if _, err := os.Stat(candidate); err == nil {
-			absPath, _ := filepath.Abs(candidate)
+			absPath, _ := filepath.Abs(candidate) //nolint:errcheck // fallback if fails
 			return absPath
 		}
 	}
