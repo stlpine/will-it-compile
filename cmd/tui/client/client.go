@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,13 +13,20 @@ import (
 	"github.com/stlpine/will-it-compile/pkg/models"
 )
 
-// Client is an HTTP client for the will-it-compile API
+// Sentinel errors for TUI client.
+var (
+	ErrAPIError          = errors.New("API error")
+	ErrJobNotFound       = errors.New("job not found")
+	ErrHealthCheckFailed = errors.New("health check failed")
+)
+
+// Client is an HTTP client for the will-it-compile API.
 type Client struct {
 	baseURL    string
 	httpClient *http.Client
 }
 
-// NewClient creates a new API client
+// NewClient creates a new API client.
 func NewClient(baseURL string) *Client {
 	return &Client{
 		baseURL: baseURL,
@@ -28,7 +36,7 @@ func NewClient(baseURL string) *Client {
 	}
 }
 
-// SubmitCompilation submits a compilation job
+// SubmitCompilation submits a compilation job.
 func (c *Client) SubmitCompilation(ctx context.Context, req models.CompilationRequest) (*models.CompilationJob, error) {
 	body, err := json.Marshal(req)
 	if err != nil {
@@ -49,7 +57,7 @@ func (c *Client) SubmitCompilation(ctx context.Context, req models.CompilationRe
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("%w (status %d): %s", ErrAPIError, resp.StatusCode, string(body))
 	}
 
 	var job models.CompilationJob
@@ -60,7 +68,7 @@ func (c *Client) SubmitCompilation(ctx context.Context, req models.CompilationRe
 	return &job, nil
 }
 
-// JobStatus represents the status of a job
+// JobStatus represents the status of a job.
 type JobStatus struct {
 	JobID  string                    `json:"job_id,omitempty"`
 	Status models.JobStatus          `json:"status,omitempty"`
@@ -68,7 +76,7 @@ type JobStatus struct {
 }
 
 // GetJob retrieves a compilation job status/result by ID
-// The API returns either JobResponse (if pending) or CompilationResult (if complete)
+// The API returns either JobResponse (if pending) or CompilationResult (if complete).
 func (c *Client) GetJob(ctx context.Context, jobID string) (*JobStatus, error) {
 	httpReq, err := http.NewRequestWithContext(ctx, "GET", c.baseURL+"/api/v1/compile/"+jobID, nil)
 	if err != nil {
@@ -82,12 +90,12 @@ func (c *Client) GetJob(ctx context.Context, jobID string) (*JobStatus, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, fmt.Errorf("job not found")
+		return nil, ErrJobNotFound
 	}
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("%w (status %d): %s", ErrAPIError, resp.StatusCode, string(body))
 	}
 
 	// Read response body
@@ -119,7 +127,7 @@ func (c *Client) GetJob(ctx context.Context, jobID string) (*JobStatus, error) {
 	}, nil
 }
 
-// GetEnvironments retrieves the list of supported environments
+// GetEnvironments retrieves the list of supported environments.
 func (c *Client) GetEnvironments(ctx context.Context) ([]models.EnvironmentSpec, error) {
 	httpReq, err := http.NewRequestWithContext(ctx, "GET", c.baseURL+"/api/v1/environments", nil)
 	if err != nil {
@@ -134,7 +142,7 @@ func (c *Client) GetEnvironments(ctx context.Context) ([]models.EnvironmentSpec,
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("%w (status %d): %s", ErrAPIError, resp.StatusCode, string(body))
 	}
 
 	var response struct {
@@ -148,7 +156,7 @@ func (c *Client) GetEnvironments(ctx context.Context) ([]models.EnvironmentSpec,
 	return response.Environments, nil
 }
 
-// HealthCheck performs a health check on the API
+// HealthCheck performs a health check on the API.
 func (c *Client) HealthCheck(ctx context.Context) error {
 	httpReq, err := http.NewRequestWithContext(ctx, "GET", c.baseURL+"/health", nil)
 	if err != nil {
@@ -162,7 +170,7 @@ func (c *Client) HealthCheck(ctx context.Context) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("health check failed (status %d)", resp.StatusCode)
+		return fmt.Errorf("%w (status %d)", ErrHealthCheckFailed, resp.StatusCode)
 	}
 
 	return nil

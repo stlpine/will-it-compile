@@ -19,9 +19,7 @@ var versionCmd = &cobra.Command{
 	Run: runVersion,
 }
 
-var (
-	versionShort bool
-)
+var versionShort bool
 
 func init() {
 	rootCmd.AddCommand(versionCmd)

@@ -39,7 +39,7 @@ func TestLoadConfig_InvalidYAML(t *testing.T) {
 	// Create a temporary invalid YAML file
 	tmpDir := t.TempDir()
 	invalidFile := filepath.Join(tmpDir, "invalid.yaml")
-	err := os.WriteFile(invalidFile, []byte("invalid: yaml: content: ["), 0644)
+	err := os.WriteFile(invalidFile, []byte("invalid: yaml: content: ["), 0o644)
 	require.NoError(t, err)
 
 	config, err := LoadConfig(invalidFile)

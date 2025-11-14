@@ -2,43 +2,48 @@ package kubernetes
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
 	"time"
 
+	"github.com/stlpine/will-it-compile/pkg/runtime"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+)
 
-	"github.com/stlpine/will-it-compile/pkg/runtime"
+// Sentinel errors for Kubernetes runtime.
+var (
+	ErrWatchChannelClosed = errors.New("watch channel closed unexpectedly")
 )
 
 const (
-	// Resource limits for compilation pods
+	// Resource limits for compilation pods.
 	MaxMemory = "128Mi"
 	MaxCPU    = "500m"
 	ReqMemory = "64Mi"
 	ReqCPU    = "100m"
 
-	// Max output size (1MB)
+	// Max output size (1MB).
 	MaxOutputSize = 1 * 1024 * 1024
 
-	// TTL for completed jobs (5 minutes)
+	// TTL for completed jobs (5 minutes).
 	JobTTLSeconds = 300
 )
 
 // KubernetesRuntime implements CompilationRuntime using Kubernetes Jobs
-// This is used for production deployments in Kubernetes clusters
+// This is used for production deployments in Kubernetes clusters.
 type KubernetesRuntime struct {
 	clientset *kubernetes.Clientset
 	namespace string
 }
 
-// NewKubernetesRuntime creates a new Kubernetes-based compilation runtime
+// NewKubernetesRuntime creates a new Kubernetes-based compilation runtime.
 func NewKubernetesRuntime(namespace string) (*KubernetesRuntime, error) {
 	// Use in-cluster config (when running inside K8s)
 	config, err := rest.InClusterConfig()
@@ -62,7 +67,7 @@ func NewKubernetesRuntime(namespace string) (*KubernetesRuntime, error) {
 	}, nil
 }
 
-// Compile runs compilation using Kubernetes Jobs
+// Compile runs compilation using Kubernetes Jobs.
 func (k *KubernetesRuntime) Compile(ctx context.Context, config runtime.CompilationConfig) (*runtime.CompilationOutput, error) {
 	startTime := time.Now()
 
@@ -74,7 +79,9 @@ func (k *KubernetesRuntime) Compile(ctx context.Context, config runtime.Compilat
 	// 2. Create and run Job
 	job, err := k.createCompilationJob(ctx, config)
 	if err != nil {
-		k.cleanup(context.Background(), config.JobID) // Clean up configmap on error
+		// Use context without cancel to allow cleanup even if parent context is cancelled
+		cleanupCtx := context.WithoutCancel(ctx)
+		k.cleanup(cleanupCtx, config.JobID) // Clean up configmap on error
 		return nil, fmt.Errorf("failed to create job: %w", err)
 	}
 
@@ -86,12 +93,15 @@ func (k *KubernetesRuntime) Compile(ctx context.Context, config runtime.Compilat
 
 	output, timedOut, err := k.waitForJobCompletion(ctx, job.Name, timeout)
 	if err != nil {
-		k.cleanup(context.Background(), config.JobID)
+		cleanupCtx := context.WithoutCancel(ctx)
+		k.cleanup(cleanupCtx, config.JobID)
 		return nil, fmt.Errorf("failed waiting for job: %w", err)
 	}
 
 	// 4. Schedule cleanup (async to not block response)
-	go k.cleanup(context.Background(), config.JobID)
+	// Use context without cancel to allow cleanup to complete even if parent is cancelled
+	cleanupCtx := context.WithoutCancel(ctx)
+	go k.cleanup(cleanupCtx, config.JobID)
 
 	output.Duration = time.Since(startTime)
 	output.TimedOut = timedOut
@@ -100,7 +110,7 @@ func (k *KubernetesRuntime) Compile(ctx context.Context, config runtime.Compilat
 }
 
 // ImageExists checks if a container image exists
-// Note: In K8s, we rely on image pull policy and let K8s handle image verification
+// Note: In K8s, we rely on image pull policy and let K8s handle image verification.
 func (k *KubernetesRuntime) ImageExists(ctx context.Context, imageTag string) (bool, error) {
 	// In Kubernetes, we can't easily check if an image exists without pulling it
 	// Instead, we'll return true and let the Job creation fail if image doesn't exist
@@ -111,17 +121,17 @@ func (k *KubernetesRuntime) ImageExists(ctx context.Context, imageTag string) (b
 	return true, nil
 }
 
-// Close cleans up any resources
+// Close cleans up any resources.
 func (k *KubernetesRuntime) Close() error {
 	// Kubernetes clientset doesn't need explicit cleanup
 	return nil
 }
 
-// createSourceConfigMap creates a ConfigMap containing the source code
+// createSourceConfigMap creates a ConfigMap containing the source code.
 func (k *KubernetesRuntime) createSourceConfigMap(ctx context.Context, config runtime.CompilationConfig) error {
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("source-%s", config.JobID),
+			Name:      "source-" + config.JobID,
 			Namespace: k.namespace,
 			Labels: map[string]string{
 				"app":        "will-it-compile",
@@ -139,14 +149,14 @@ func (k *KubernetesRuntime) createSourceConfigMap(ctx context.Context, config ru
 	return err
 }
 
-// createCompilationJob creates a Kubernetes Job for compilation
+// createCompilationJob creates a Kubernetes Job for compilation.
 func (k *KubernetesRuntime) createCompilationJob(ctx context.Context, config runtime.CompilationConfig) (*batchv1.Job, error) {
 	backoffLimit := int32(0) // Don't retry failed jobs
 	ttlSeconds := int32(JobTTLSeconds)
 
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("compile-%s", config.JobID),
+			Name:      "compile-" + config.JobID,
 			Namespace: k.namespace,
 			Labels: map[string]string{
 				"app":        "will-it-compile",
@@ -221,7 +231,7 @@ func (k *KubernetesRuntime) createCompilationJob(ctx context.Context, config run
 							VolumeSource: corev1.VolumeSource{
 								ConfigMap: &corev1.ConfigMapVolumeSource{
 									LocalObjectReference: corev1.LocalObjectReference{
-										Name: fmt.Sprintf("source-%s", config.JobID),
+										Name: "source-" + config.JobID,
 									},
 								},
 							},
@@ -244,7 +254,7 @@ func (k *KubernetesRuntime) createCompilationJob(ctx context.Context, config run
 	return k.clientset.BatchV1().Jobs(k.namespace).Create(ctx, job, metav1.CreateOptions{})
 }
 
-// waitForJobCompletion waits for a Job to complete and returns its output
+// waitForJobCompletion waits for a Job to complete and returns its output.
 func (k *KubernetesRuntime) waitForJobCompletion(ctx context.Context, jobName string, timeout time.Duration) (*runtime.CompilationOutput, bool, error) {
 	// Create a context with timeout
 	ctx, cancel := context.WithTimeout(ctx, timeout)
@@ -252,7 +262,7 @@ func (k *KubernetesRuntime) waitForJobCompletion(ctx context.Context, jobName st
 
 	// Watch for job completion
 	watcher, err := k.clientset.BatchV1().Jobs(k.namespace).Watch(ctx, metav1.ListOptions{
-		FieldSelector:  fmt.Sprintf("metadata.name=%s", jobName),
+		FieldSelector:  "metadata.name=" + jobName,
 		TimeoutSeconds: ptr(int64(timeout.Seconds())),
 	})
 	if err != nil {
@@ -266,13 +276,13 @@ func (k *KubernetesRuntime) waitForJobCompletion(ctx context.Context, jobName st
 		case event, ok := <-watcher.ResultChan():
 			if !ok {
 				// Channel closed, check if it was due to timeout
-				if ctx.Err() == context.DeadlineExceeded {
+				if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 					return &runtime.CompilationOutput{
 						Stderr:   "Compilation timeout",
 						ExitCode: 137, // SIGKILL
 					}, true, nil
 				}
-				return nil, false, fmt.Errorf("watch channel closed unexpectedly")
+				return nil, false, ErrWatchChannelClosed
 			}
 
 			job, ok := event.Object.(*batchv1.Job)
@@ -282,13 +292,17 @@ func (k *KubernetesRuntime) waitForJobCompletion(ctx context.Context, jobName st
 
 			// Check if job succeeded
 			if job.Status.Succeeded > 0 {
-				output, err := k.getJobOutput(context.Background(), jobName)
+				// Use context without cancel to allow output collection even if parent context is cancelled
+				outputCtx := context.WithoutCancel(ctx)
+				output, err := k.getJobOutput(outputCtx, jobName)
 				return output, false, err
 			}
 
 			// Check if job failed
 			if job.Status.Failed > 0 {
-				output, _ := k.getJobOutput(context.Background(), jobName)
+				// Use context without cancel to allow output collection even if parent context is cancelled
+				outputCtx := context.WithoutCancel(ctx)
+				output, _ := k.getJobOutput(outputCtx, jobName)
 				if output == nil {
 					output = &runtime.CompilationOutput{
 						Stderr:   "Job failed to execute",
@@ -308,11 +322,11 @@ func (k *KubernetesRuntime) waitForJobCompletion(ctx context.Context, jobName st
 	}
 }
 
-// getJobOutput retrieves the output from a completed job
+// getJobOutput retrieves the output from a completed job.
 func (k *KubernetesRuntime) getJobOutput(ctx context.Context, jobName string) (*runtime.CompilationOutput, error) {
 	// Get pods created by the job
 	pods, err := k.clientset.CoreV1().Pods(k.namespace).List(ctx, metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("job-name=%s", jobName),
+		LabelSelector: "job-name=" + jobName,
 	})
 	if err != nil || len(pods.Items) == 0 {
 		return nil, fmt.Errorf("failed to get job pods: %w", err)
@@ -361,22 +375,22 @@ func (k *KubernetesRuntime) getJobOutput(ctx context.Context, jobName string) (*
 	}, nil
 }
 
-// cleanup removes the ConfigMap and Job resources
+// cleanup removes the ConfigMap and Job resources.
 func (k *KubernetesRuntime) cleanup(ctx context.Context, jobID string) {
 	deletePolicy := metav1.DeletePropagationForeground
 
 	// Delete job (pods will be deleted automatically due to TTL)
-	jobName := fmt.Sprintf("compile-%s", jobID)
+	jobName := "compile-" + jobID
 	k.clientset.BatchV1().Jobs(k.namespace).Delete(ctx, jobName, metav1.DeleteOptions{
 		PropagationPolicy: &deletePolicy,
 	})
 
 	// Delete configmap
-	configMapName := fmt.Sprintf("source-%s", jobID)
+	configMapName := "source-" + jobID
 	k.clientset.CoreV1().ConfigMaps(k.namespace).Delete(ctx, configMapName, metav1.DeleteOptions{})
 }
 
-// convertEnv converts []string environment variables to []corev1.EnvVar
+// convertEnv converts []string environment variables to []corev1.EnvVar.
 func (k *KubernetesRuntime) convertEnv(envVars []string) []corev1.EnvVar {
 	result := make([]corev1.EnvVar, 0, len(envVars))
 	for _, e := range envVars {
@@ -391,10 +405,10 @@ func (k *KubernetesRuntime) convertEnv(envVars []string) []corev1.EnvVar {
 	return result
 }
 
-// ptr is a helper to get pointer to a value
+// ptr is a helper to get pointer to a value.
 func ptr[T any](v T) *T {
 	return &v
 }
 
-// Ensure KubernetesRuntime implements CompilationRuntime
+// Ensure KubernetesRuntime implements CompilationRuntime.
 var _ runtime.CompilationRuntime = (*KubernetesRuntime)(nil)

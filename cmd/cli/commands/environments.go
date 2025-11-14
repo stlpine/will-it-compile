@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -8,6 +9,11 @@ import (
 	"github.com/stlpine/will-it-compile/internal/compiler"
 	"github.com/stlpine/will-it-compile/internal/runtime/docker"
 	"github.com/stlpine/will-it-compile/pkg/models"
+)
+
+// Sentinel errors for environments command.
+var (
+	ErrInvalidOutputFormat = errors.New("invalid output format")
 )
 
 var environmentsCmd = &cobra.Command{
@@ -28,9 +34,7 @@ var environmentsCmd = &cobra.Command{
 	RunE: runEnvironments,
 }
 
-var (
-	envOutputFormat string
-)
+var envOutputFormat string
 
 func init() {
 	rootCmd.AddCommand(environmentsCmd)
@@ -70,7 +74,7 @@ func runEnvironments(cmd *cobra.Command, args []string) error {
 		printEnvironmentsJSON(cmd, environments)
 	default:
 		printError("unknown output format: %s (use: table, list, json)", envOutputFormat)
-		return fmt.Errorf("invalid output format")
+		return ErrInvalidOutputFormat
 	}
 
 	return nil

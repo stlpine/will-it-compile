@@ -3,22 +3,32 @@ package compiler
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
+	internalruntime "github.com/stlpine/will-it-compile/internal/runtime"
 	"github.com/stlpine/will-it-compile/pkg/models"
 	"github.com/stlpine/will-it-compile/pkg/runtime"
-	internalruntime "github.com/stlpine/will-it-compile/internal/runtime"
 )
 
-// Compiler handles code compilation in isolated environments
+// Sentinel errors for compiler package.
+var (
+	ErrMissingRequiredImages  = errors.New("missing required Docker images")
+	ErrSourceCodeTooLarge     = errors.New("source code too large (max 1MB)")
+	ErrUnsupportedLanguage    = errors.New("unsupported language")
+	ErrUnsupportedEnvironment = errors.New("unsupported environment")
+)
+
+// Compiler handles code compilation in isolated environments.
 type Compiler struct {
 	runtime      runtime.CompilationRuntime
 	environments map[string]models.EnvironmentSpec
 }
 
 // NewCompiler creates a new compiler instance with auto-detected runtime
-// It loads environment configuration from YAML, with hardcoded fallback
+// It loads environment configuration from YAML, with hardcoded fallback.
 func NewCompiler() (*Compiler, error) {
 	// Auto-detect runtime (Docker or Kubernetes)
 	rt, err := internalruntime.NewRuntimeAuto("")
@@ -57,7 +67,7 @@ func NewCompiler() (*Compiler, error) {
 }
 
 // NewCompilerWithRuntime creates a compiler with a custom runtime (useful for testing and explicit runtime selection)
-// Uses hardcoded configuration by default, but can be customized after creation
+// Uses hardcoded configuration by default, but can be customized after creation.
 func NewCompilerWithRuntime(rt runtime.CompilationRuntime) *Compiler {
 	return &Compiler{
 		runtime:      rt,
@@ -66,7 +76,7 @@ func NewCompilerWithRuntime(rt runtime.CompilationRuntime) *Compiler {
 }
 
 // getHardcodedEnvironments returns the hardcoded fallback environment configuration
-// This is used when YAML config cannot be loaded, or for testing
+// This is used when YAML config cannot be loaded, or for testing.
 func getHardcodedEnvironments() map[string]models.EnvironmentSpec {
 	return map[string]models.EnvironmentSpec{
 		"cpp-gcc-13": {
@@ -81,12 +91,12 @@ func getHardcodedEnvironments() map[string]models.EnvironmentSpec {
 	}
 }
 
-// Close cleans up resources
+// Close cleans up resources.
 func (c *Compiler) Close() error {
 	return c.runtime.Close()
 }
 
-// verifyImages checks that all required images exist
+// verifyImages checks that all required images exist.
 func (c *Compiler) verifyImages(ctx context.Context) error {
 	missingImages := []string{}
 
@@ -103,17 +113,19 @@ func (c *Compiler) verifyImages(ctx context.Context) error {
 
 	if len(missingImages) > 0 {
 		imageList := ""
+		var imageListSb106 strings.Builder
 		for _, img := range missingImages {
-			imageList += "\n  - " + img
+			imageListSb106.WriteString("\n  - " + img)
 		}
-		return fmt.Errorf("missing required images:%s\n\nPlease build images using:\n  make docker-build\n  or: cd images/cpp && ./build.sh",
-			imageList)
+		imageList += imageListSb106.String()
+		return fmt.Errorf("%w:%s\n\nPlease build images using:\n  make docker-build\n  or: cd images/cpp && ./build.sh",
+			ErrMissingRequiredImages, imageList)
 	}
 
 	return nil
 }
 
-// Compile compiles the given code and returns the result
+// Compile compiles the given code and returns the result.
 func (c *Compiler) Compile(ctx context.Context, job models.CompilationJob) models.CompilationResult {
 	startTime := time.Now()
 
@@ -196,7 +208,7 @@ func (c *Compiler) Compile(ctx context.Context, job models.CompilationJob) model
 	return result
 }
 
-// validateRequest validates the compilation request
+// validateRequest validates the compilation request.
 func (c *Compiler) validateRequest(req models.CompilationRequest) error {
 	// Use the built-in Validate method
 	if err := req.Validate(); err != nil {
@@ -205,19 +217,19 @@ func (c *Compiler) validateRequest(req models.CompilationRequest) error {
 
 	// Check code size (base64 encoded)
 	if len(req.Code) > 2*1024*1024 { // ~1.5MB source after decoding
-		return fmt.Errorf("source code too large (max 1MB)")
+		return ErrSourceCodeTooLarge
 	}
 
 	// Validate language support (for MVP, only cpp is supported)
 	normalizedLang := req.Language.Normalize()
 	if normalizedLang != models.LanguageCpp {
-		return fmt.Errorf("unsupported language: %s (supported: cpp)", req.Language)
+		return fmt.Errorf("%w: %s (supported: cpp)", ErrUnsupportedLanguage, req.Language)
 	}
 
 	return nil
 }
 
-// selectEnvironment selects the appropriate environment for compilation
+// selectEnvironment selects the appropriate environment for compilation.
 func (c *Compiler) selectEnvironment(req models.CompilationRequest) (models.EnvironmentSpec, error) {
 	// Normalize language
 	language := req.Language.Normalize()
@@ -233,7 +245,7 @@ func (c *Compiler) selectEnvironment(req models.CompilationRequest) (models.Envi
 
 	env, exists := c.environments[envKey]
 	if !exists {
-		return models.EnvironmentSpec{}, fmt.Errorf("unsupported environment: %s with %s", language, compiler)
+		return models.EnvironmentSpec{}, fmt.Errorf("%w: %s with %s", ErrUnsupportedEnvironment, language, compiler)
 	}
 
 	// Override standard if specified
@@ -244,7 +256,7 @@ func (c *Compiler) selectEnvironment(req models.CompilationRequest) (models.Envi
 	return env, nil
 }
 
-// GetSupportedEnvironments returns a list of supported environments
+// GetSupportedEnvironments returns a list of supported environments.
 func (c *Compiler) GetSupportedEnvironments() []models.Environment {
 	return []models.Environment{
 		{

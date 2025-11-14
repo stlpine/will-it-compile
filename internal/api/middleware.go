@@ -8,7 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// RateLimiter implements a simple token bucket rate limiter
+// RateLimiter implements a simple token bucket rate limiter.
 type RateLimiter struct {
 	mu      sync.Mutex
 	buckets map[string]*bucket
@@ -21,7 +21,7 @@ type bucket struct {
 	lastRefill time.Time
 }
 
-// NewRateLimiter creates a new rate limiter
+// NewRateLimiter creates a new rate limiter.
 func NewRateLimiter(rate int, window time.Duration) *RateLimiter {
 	limiter := &RateLimiter{
 		buckets: make(map[string]*bucket),
@@ -35,7 +35,7 @@ func NewRateLimiter(rate int, window time.Duration) *RateLimiter {
 	return limiter
 }
 
-// Allow checks if a request from the given IP is allowed
+// Allow checks if a request from the given IP is allowed.
 func (rl *RateLimiter) Allow(ip string) bool {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
@@ -65,7 +65,7 @@ func (rl *RateLimiter) Allow(ip string) bool {
 	return false
 }
 
-// cleanup periodically removes old buckets
+// cleanup periodically removes old buckets.
 func (rl *RateLimiter) cleanup() {
 	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
@@ -82,7 +82,7 @@ func (rl *RateLimiter) cleanup() {
 	}
 }
 
-// RateLimitMiddleware returns an Echo middleware that enforces rate limiting
+// RateLimitMiddleware returns an Echo middleware that enforces rate limiting.
 func RateLimitMiddleware(limiter *RateLimiter) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {

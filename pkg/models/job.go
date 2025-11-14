@@ -2,7 +2,7 @@ package models
 
 import "time"
 
-// CompilationJob represents a job to be processed
+// CompilationJob represents a job to be processed.
 type CompilationJob struct {
 	ID          string             `json:"id"`
 	Request     CompilationRequest `json:"request"`
@@ -12,7 +12,7 @@ type CompilationJob struct {
 	CompletedAt *time.Time         `json:"completed_at,omitempty"`
 }
 
-// JobResponse is returned when a job is created
+// JobResponse is returned when a job is created.
 type JobResponse struct {
 	JobID  string    `json:"job_id"`
 	Status JobStatus `json:"status"`

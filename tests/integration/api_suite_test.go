@@ -18,20 +18,20 @@ import (
 )
 
 // APISuite is a test suite for API integration tests
-// It provides common setup/teardown and helper methods
+// It provides common setup/teardown and helper methods.
 type APISuite struct {
 	suite.Suite
 	server *api.Server
 	echo   *echo.Echo
 }
 
-// SetupSuite runs once before all tests in the suite
+// SetupSuite runs once before all tests in the suite.
 func (s *APISuite) SetupSuite() {
 	// This would be a good place to ensure Docker images are built
 	// or to do other one-time setup
 }
 
-// SetupTest runs before each test in the suite
+// SetupTest runs before each test in the suite.
 func (s *APISuite) SetupTest() {
 	server, err := api.NewServer()
 	require.NoError(s.T(), err, "Failed to create server")
@@ -39,14 +39,14 @@ func (s *APISuite) SetupTest() {
 	s.echo = api.NewEchoServer(server, false)
 }
 
-// TearDownTest runs after each test in the suite
+// TearDownTest runs after each test in the suite.
 func (s *APISuite) TearDownTest() {
 	if s.server != nil {
 		s.server.Close()
 	}
 }
 
-// Helper method to submit a compilation request
+// Helper method to submit a compilation request.
 func (s *APISuite) submitCompilation(request models.CompilationRequest) models.JobResponse {
 	body, err := json.Marshal(request)
 	require.NoError(s.T(), err, "Failed to marshal request")
@@ -66,7 +66,7 @@ func (s *APISuite) submitCompilation(request models.CompilationRequest) models.J
 	return jobResponse
 }
 
-// Helper method to get compilation result
+// Helper method to get compilation result.
 func (s *APISuite) getCompilationResult(jobID string) models.CompilationResult {
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/compile/"+jobID, nil)
 	rec := httptest.NewRecorder()
@@ -82,7 +82,7 @@ func (s *APISuite) getCompilationResult(jobID string) models.CompilationResult {
 	return result
 }
 
-// Helper method to create a compilation request
+// Helper method to create a compilation request.
 func (s *APISuite) createCppRequest(sourceCode string) models.CompilationRequest {
 	encodedCode := base64.StdEncoding.EncodeToString([]byte(sourceCode))
 	return models.CompilationRequest{
@@ -93,7 +93,7 @@ func (s *APISuite) createCppRequest(sourceCode string) models.CompilationRequest
 	}
 }
 
-// TestAPISuite_Health tests the health endpoint
+// TestAPISuite_Health tests the health endpoint.
 func (s *APISuite) TestHealth() {
 	req := httptest.NewRequest(http.MethodGet, "/health", nil)
 	rec := httptest.NewRecorder()
@@ -109,7 +109,7 @@ func (s *APISuite) TestHealth() {
 	assert.Equal(s.T(), "healthy", response["status"], "Expected status 'healthy'")
 }
 
-// TestAPISuite_GetEnvironments tests the environments endpoint
+// TestAPISuite_GetEnvironments tests the environments endpoint.
 func (s *APISuite) TestGetEnvironments() {
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/environments", nil)
 	rec := httptest.NewRecorder()
@@ -136,7 +136,7 @@ func (s *APISuite) TestGetEnvironments() {
 	assert.True(s.T(), found, "Expected C++ environment to be present")
 }
 
-// TestAPISuite_CompileValidCode tests successful compilation
+// TestAPISuite_CompileValidCode tests successful compilation.
 func (s *APISuite) TestCompileValidCode() {
 	if testing.Short() {
 		s.T().Skip("Skipping integration test in short mode")
@@ -163,7 +163,7 @@ int main() {
 	assert.Equal(s.T(), 0, result.ExitCode, "Expected exit code 0")
 }
 
-// TestAPISuite_CompileInvalidCode tests failed compilation
+// TestAPISuite_CompileInvalidCode tests failed compilation.
 func (s *APISuite) TestCompileInvalidCode() {
 	if testing.Short() {
 		s.T().Skip("Skipping integration test in short mode")
@@ -188,7 +188,7 @@ int main() {
 	assert.NotEmpty(s.T(), result.Stderr, "Expected error message in stderr")
 }
 
-// TestAPISuite runs the test suite
+// TestAPISuite runs the test suite.
 func TestAPISuite(t *testing.T) {
 	suite.Run(t, new(APISuite))
 }

@@ -8,7 +8,7 @@ import (
 )
 
 // processJob processes a compilation job asynchronously
-// This runs in a goroutine and updates the job status throughout the process
+// This runs in a goroutine and updates the job status throughout the process.
 func (s *Server) processJob(job models.CompilationJob) {
 	// Update status to processing
 	job.Status = models.StatusProcessing

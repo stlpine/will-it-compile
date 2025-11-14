@@ -1,6 +1,7 @@
 package compiler
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,20 +10,31 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Config represents the parsed configuration from environments.yaml
+// Sentinel errors for config validation.
+var (
+	ErrNoEnvironmentsDefined     = errors.New("no environments defined")
+	ErrLanguageRequired          = errors.New("language is required")
+	ErrNoCompilersDefined        = errors.New("no compilers defined for language")
+	ErrCompilerNameRequired      = errors.New("compiler name is required")
+	ErrCompilerVersionRequired   = errors.New("compiler version is required")
+	ErrCompilerImageRequired     = errors.New("compiler image is required")
+	ErrUnsupportedConfigLanguage = errors.New("unsupported language in config")
+)
+
+// Config represents the parsed configuration from environments.yaml.
 type Config struct {
 	Environments []EnvironmentConfig `yaml:"environments"`
 	Limits       LimitsConfig        `yaml:"limits"`
 	RateLimits   RateLimitsConfig    `yaml:"rate_limits"`
 }
 
-// EnvironmentConfig represents a language environment configuration
+// EnvironmentConfig represents a language environment configuration.
 type EnvironmentConfig struct {
-	Language  string            `yaml:"language"`
-	Compilers []CompilerConfig  `yaml:"compilers"`
+	Language  string           `yaml:"language"`
+	Compilers []CompilerConfig `yaml:"compilers"`
 }
 
-// CompilerConfig represents a compiler configuration
+// CompilerConfig represents a compiler configuration.
 type CompilerConfig struct {
 	Name          string   `yaml:"name"`
 	Version       string   `yaml:"version"`
@@ -32,22 +44,22 @@ type CompilerConfig struct {
 	OSes          []string `yaml:"oses"`
 }
 
-// LimitsConfig represents resource limits
+// LimitsConfig represents resource limits.
 type LimitsConfig struct {
-	MaxSourceSizeMB            int `yaml:"max_source_size_mb"`
-	MaxCompilationTimeSeconds  int `yaml:"max_compilation_time_seconds"`
-	MaxOutputSizeMB            int `yaml:"max_output_size_mb"`
-	MaxMemoryMB                int `yaml:"max_memory_mb"`
-	MaxCPUQuota                int `yaml:"max_cpu_quota"`
+	MaxSourceSizeMB           int `yaml:"max_source_size_mb"`
+	MaxCompilationTimeSeconds int `yaml:"max_compilation_time_seconds"`
+	MaxOutputSizeMB           int `yaml:"max_output_size_mb"`
+	MaxMemoryMB               int `yaml:"max_memory_mb"`
+	MaxCPUQuota               int `yaml:"max_cpu_quota"`
 }
 
-// RateLimitsConfig represents rate limiting configuration
+// RateLimitsConfig represents rate limiting configuration.
 type RateLimitsConfig struct {
 	RequestsPerMinute int `yaml:"requests_per_minute"`
 	Burst             int `yaml:"burst"`
 }
 
-// LoadConfig loads the configuration from a YAML file
+// LoadConfig loads the configuration from a YAML file.
 func LoadConfig(configPath string) (*Config, error) {
 	data, err := os.ReadFile(configPath)
 	if err != nil {
@@ -67,28 +79,28 @@ func LoadConfig(configPath string) (*Config, error) {
 	return &config, nil
 }
 
-// Validate validates the configuration
+// Validate validates the configuration.
 func (c *Config) Validate() error {
 	if len(c.Environments) == 0 {
-		return fmt.Errorf("no environments defined")
+		return ErrNoEnvironmentsDefined
 	}
 
 	for i, env := range c.Environments {
 		if env.Language == "" {
-			return fmt.Errorf("environment[%d]: language is required", i)
+			return fmt.Errorf("%w: environment[%d]", ErrLanguageRequired, i)
 		}
 		if len(env.Compilers) == 0 {
-			return fmt.Errorf("environment[%d]: no compilers defined for language %s", i, env.Language)
+			return fmt.Errorf("%w %s: environment[%d]", ErrNoCompilersDefined, env.Language, i)
 		}
 		for j, comp := range env.Compilers {
 			if comp.Name == "" {
-				return fmt.Errorf("environment[%d].compiler[%d]: compiler name is required", i, j)
+				return fmt.Errorf("%w: environment[%d].compiler[%d]", ErrCompilerNameRequired, i, j)
 			}
 			if comp.Version == "" {
-				return fmt.Errorf("environment[%d].compiler[%d]: compiler version is required", i, j)
+				return fmt.Errorf("%w: environment[%d].compiler[%d]", ErrCompilerVersionRequired, i, j)
 			}
 			if comp.Image == "" {
-				return fmt.Errorf("environment[%d].compiler[%d]: image is required", i, j)
+				return fmt.Errorf("%w: environment[%d].compiler[%d]", ErrCompilerImageRequired, i, j)
 			}
 		}
 	}
@@ -96,7 +108,7 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-// ToEnvironmentSpecs converts the configuration to a map of EnvironmentSpec
+// ToEnvironmentSpecs converts the configuration to a map of EnvironmentSpec.
 func (c *Config) ToEnvironmentSpecs() (map[string]models.EnvironmentSpec, error) {
 	envSpecs := make(map[string]models.EnvironmentSpec)
 
@@ -104,7 +116,7 @@ func (c *Config) ToEnvironmentSpecs() (map[string]models.EnvironmentSpec, error)
 		// Parse language
 		language := models.Language(envConfig.Language)
 		if !language.Valid() {
-			return nil, fmt.Errorf("unsupported language: %s", envConfig.Language)
+			return nil, fmt.Errorf("%w: %s", ErrUnsupportedConfigLanguage, envConfig.Language)
 		}
 		language = language.Normalize()
 
@@ -157,14 +169,14 @@ func (c *Config) ToEnvironmentSpecs() (map[string]models.EnvironmentSpec, error)
 	return envSpecs, nil
 }
 
-// GetDefaultConfigPath returns the default path to the configuration file
+// GetDefaultConfigPath returns the default path to the configuration file.
 func GetDefaultConfigPath() string {
 	// Try to find the config file relative to the project root
 	// This works when running from project directory or bin directory
 	candidates := []string{
-		"configs/environments.yaml",                    // When running from project root
-		"../configs/environments.yaml",                 // When running from bin/
-		"../../configs/environments.yaml",              // When running from test directories
+		"configs/environments.yaml",       // When running from project root
+		"../configs/environments.yaml",    // When running from bin/
+		"../../configs/environments.yaml", // When running from test directories
 	}
 
 	for _, candidate := range candidates {
@@ -178,7 +190,7 @@ func GetDefaultConfigPath() string {
 	return "configs/environments.yaml"
 }
 
-// LoadDefaultConfig loads the configuration from the default location
+// LoadDefaultConfig loads the configuration from the default location.
 func LoadDefaultConfig() (*Config, error) {
 	configPath := GetDefaultConfigPath()
 	return LoadConfig(configPath)
