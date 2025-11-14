@@ -183,7 +183,6 @@ Potential workflow improvements for later:
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
 - [golangci-lint GitHub Action](https://github.com/golangci/golangci-lint-action)
 - [Go setup action](https://github.com/actions/setup-go)
-- [Docker Buildx action](https://github.com/docker/setup-buildx-action)
 
 ---
 
