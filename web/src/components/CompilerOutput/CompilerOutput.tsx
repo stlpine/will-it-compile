@@ -1,5 +1,6 @@
 import { CompilationResult } from '../../types/api'
 import { formatDuration } from '../../utils/formatters'
+import { sanitizeOutput } from '../../utils/security'
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Badge } from '../ui/badge'
@@ -12,10 +13,16 @@ interface CompilerOutputProps {
 
 /**
  * Component to display compilation results with shadcn/ui
+ * Sanitizes all output to prevent XSS attacks
  */
 export function CompilerOutput({ result }: CompilerOutputProps) {
   const hasStdout = result.stdout && result.stdout.trim().length > 0
   const hasStderr = result.stderr && result.stderr.trim().length > 0
+
+  // Sanitize outputs to remove dangerous control sequences
+  const safeStdout = sanitizeOutput(result.stdout || '')
+  const safeStderr = sanitizeOutput(result.stderr || '')
+  const safeError = sanitizeOutput(result.error || '')
 
   return (
     <div className="space-y-4">
@@ -51,7 +58,7 @@ export function CompilerOutput({ result }: CompilerOutputProps) {
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>
             <pre className="mt-2 text-sm whitespace-pre-wrap font-mono">
-              {result.error}
+              {safeError}
             </pre>
           </AlertDescription>
         </Alert>
@@ -69,7 +76,7 @@ export function CompilerOutput({ result }: CompilerOutputProps) {
           <Separator />
           <CardContent className="pt-4">
             <pre className="text-sm whitespace-pre-wrap font-mono bg-muted p-4 rounded-md max-h-96 overflow-y-auto scrollbar-thin">
-              {result.stdout}
+              {safeStdout}
             </pre>
           </CardContent>
         </Card>
@@ -89,7 +96,7 @@ export function CompilerOutput({ result }: CompilerOutputProps) {
             <pre className={`text-sm whitespace-pre-wrap font-mono p-4 rounded-md max-h-96 overflow-y-auto scrollbar-thin ${
               result.compiled ? 'bg-yellow-100/50 text-yellow-900' : 'bg-destructive/5 text-destructive'
             }`}>
-              {result.stderr}
+              {safeStderr}
             </pre>
           </CardContent>
         </Card>

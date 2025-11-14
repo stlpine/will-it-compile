@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { CodeEditor } from '../components/CodeEditor'
 import { EnvironmentSelector } from '../components/EnvironmentSelector'
 import { CompilerOutput } from '../components/CompilerOutput'
@@ -15,7 +15,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Button } from '../components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert'
 import { Separator } from '../components/ui/separator'
-import { Github, Play, RotateCcw, Code2, Zap } from 'lucide-react'
+import { Github, Play, RotateCcw, Code2, Zap, AlertTriangle, Shield } from 'lucide-react'
+import { safeBase64Encode, validateCode, RateLimiter, checkSecureContext } from '../utils/security'
 
 /**
  * Home page - Main compilation interface with shadcn/ui
@@ -24,9 +25,30 @@ export function Home() {
   const [language, setLanguage] = useState<Language>('cpp')
   const [standard, setStandard] = useState<Standard>('c++20')
   const [code, setCode] = useState<string>('')
+  const [validationError, setValidationError] = useState<string>('')
+  const [securityWarning, setSecurityWarning] = useState<string>('')
+
+  // Rate limiter: 10 requests per minute
+  const rateLimiterRef = useRef(new RateLimiter(10, 60000))
 
   const { isCompiling, result, error, statusMessage, compile, reset } =
     useCompilation()
+
+  // Check secure context on mount
+  useEffect(() => {
+    checkSecureContext()
+
+    // Warn if not in secure context
+    if (
+      !window.isSecureContext &&
+      window.location.hostname !== 'localhost' &&
+      window.location.hostname !== '127.0.0.1'
+    ) {
+      setSecurityWarning(
+        'Warning: Application is not running over HTTPS. Data transmission may not be secure.'
+      )
+    }
+  }, [])
 
   // Update default code when language changes
   useEffect(() => {
@@ -37,30 +59,55 @@ export function Home() {
         setStandard(config.standard)
       }
     }
+    // Clear validation error when language changes
+    setValidationError('')
   }, [language])
 
   const handleCompile = async () => {
+    setValidationError('')
+
     const config = LANGUAGE_CONFIGS[language]
     if (!config) {
-      alert('Invalid language selected')
+      setValidationError('Invalid language selected')
       return
     }
 
-    // Encode source code to base64
-    const encodedCode = btoa(code)
+    // Validate code input
+    const validation = validateCode(code)
+    if (!validation.valid) {
+      setValidationError(validation.error || 'Invalid code')
+      return
+    }
 
-    await compile({
-      code: encodedCode,
-      language: config.language,
-      compiler: config.compiler,
-      standard: language === 'cpp' || language === 'c++' ? standard : undefined,
-      architecture: DEFAULT_ARCHITECTURE,
-      os: DEFAULT_OS,
-    })
+    // Check rate limit
+    const rateLimit = rateLimiterRef.current.checkLimit()
+    if (!rateLimit.allowed) {
+      setValidationError(
+        `Rate limit exceeded. Please wait ${rateLimit.retryAfter} seconds before trying again.`
+      )
+      return
+    }
+
+    try {
+      // Safely encode source code to base64 (handles Unicode)
+      const encodedCode = safeBase64Encode(code)
+
+      await compile({
+        code: encodedCode,
+        language: config.language,
+        compiler: config.compiler,
+        standard: language === 'cpp' || language === 'c++' ? standard : undefined,
+        architecture: DEFAULT_ARCHITECTURE,
+        os: DEFAULT_OS,
+      })
+    } catch (err) {
+      setValidationError(err instanceof Error ? err.message : 'Failed to encode code')
+    }
   }
 
   const handleReset = () => {
     reset()
+    setValidationError('')
     const config = LANGUAGE_CONFIGS[language]
     if (config) {
       setCode(config.defaultCode)
@@ -108,6 +155,15 @@ export function Home() {
       {/* Main Content */}
       <main className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
+          {/* Security Warning */}
+          {securityWarning && (
+            <Alert variant="warning">
+              <Shield className="h-5 w-5" />
+              <AlertTitle>Security Notice</AlertTitle>
+              <AlertDescription>{securityWarning}</AlertDescription>
+            </Alert>
+          )}
+
           {/* Environment Selector Card */}
           <Card>
             <CardHeader>
@@ -188,6 +244,15 @@ export function Home() {
           {/* Job Status */}
           {(isCompiling || statusMessage) && (
             <JobStatus isCompiling={isCompiling} statusMessage={statusMessage} />
+          )}
+
+          {/* Validation Error */}
+          {validationError && (
+            <Alert variant="warning">
+              <AlertTriangle className="h-5 w-5" />
+              <AlertTitle>Validation Error</AlertTitle>
+              <AlertDescription>{validationError}</AlertDescription>
+            </Alert>
           )}
 
           {/* Error Display */}
