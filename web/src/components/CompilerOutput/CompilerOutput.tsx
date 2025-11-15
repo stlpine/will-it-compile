@@ -1,11 +1,17 @@
-import { CompilationResult } from '../../types/api'
-import { formatDuration } from '../../utils/formatters'
-import { sanitizeOutput } from '../../utils/security'
-import { Alert, AlertDescription, AlertTitle } from '../ui/alert'
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
-import { Badge } from '../ui/badge'
-import { CheckCircle2, XCircle, AlertTriangle, FileText, Terminal } from 'lucide-react'
-import { Separator } from '../ui/separator'
+import { CompilationResult } from '@/types/api.ts'
+import { formatDuration } from '@/utils/formatters.ts'
+import { sanitizeOutput } from '@/utils/security.ts'
+import { Alert, AlertDescription, AlertTitle } from '@/ui/alert'
+import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card'
+import { Badge } from '@/ui/badge'
+import {
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  FileText,
+  Terminal,
+} from 'lucide-react'
+import { Separator } from '@/ui/separator'
 
 interface CompilerOutputProps {
   result: CompilationResult
@@ -84,7 +90,13 @@ export function CompilerOutput({ result }: CompilerOutputProps) {
 
       {/* Standard Error */}
       {hasStderr && (
-        <Card className={result.compiled ? 'border-yellow-200 bg-yellow-50/50' : 'border-destructive/50'}>
+        <Card
+          className={
+            result.compiled
+              ? 'border-yellow-200 bg-yellow-50/50'
+              : 'border-destructive/50'
+          }
+        >
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <AlertTriangle className="h-4 w-4" />
@@ -93,9 +105,13 @@ export function CompilerOutput({ result }: CompilerOutputProps) {
           </CardHeader>
           <Separator />
           <CardContent className="pt-4">
-            <pre className={`text-sm whitespace-pre-wrap font-mono p-4 rounded-md max-h-96 overflow-y-auto scrollbar-thin ${
-              result.compiled ? 'bg-yellow-100/50 text-yellow-900' : 'bg-destructive/5 text-destructive'
-            }`}>
+            <pre
+              className={`text-sm whitespace-pre-wrap font-mono p-4 rounded-md max-h-96 overflow-y-auto scrollbar-thin ${
+                result.compiled
+                  ? 'bg-yellow-100/50 text-yellow-900'
+                  : 'bg-destructive/5 text-destructive'
+              }`}
+            >
               {safeStderr}
             </pre>
           </CardContent>
@@ -107,9 +123,7 @@ export function CompilerOutput({ result }: CompilerOutputProps) {
         <Card>
           <CardContent className="pt-6 pb-6 text-center">
             <FileText className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-            <p className="text-sm text-muted-foreground">
-              No output generated
-            </p>
+            <p className="text-sm text-muted-foreground">No output generated</p>
           </CardContent>
         </Card>
       )}

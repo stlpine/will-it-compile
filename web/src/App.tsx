@@ -1,5 +1,5 @@
 import { Home } from './pages'
-import './styles/globals.css'
+import './index.css'
 
 /**
  * Main App component

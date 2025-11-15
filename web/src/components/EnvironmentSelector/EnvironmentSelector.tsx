@@ -1,11 +1,11 @@
-import { Language, LANGUAGE_CONFIGS, Standard } from '../../types/api'
+import { Language, LANGUAGE_CONFIGS, Standard } from '@/types/api.ts'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../ui/select'
+} from '@/ui/select'
 import { Code2, Settings2 } from 'lucide-react'
 
 interface EnvironmentSelectorProps {
@@ -30,13 +30,7 @@ export function EnvironmentSelector({
   const showStandardSelector =
     selectedLanguage === 'cpp' || selectedLanguage === 'c++'
 
-  const cppStandards: Standard[] = [
-    'c++11',
-    'c++14',
-    'c++17',
-    'c++20',
-    'c++23',
-  ]
+  const cppStandards: Standard[] = ['c++11', 'c++14', 'c++17', 'c++20', 'c++23']
 
   return (
     <div className="flex flex-col sm:flex-row gap-4">

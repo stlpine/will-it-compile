@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { CodeEditor } from '../components/CodeEditor'
-import { EnvironmentSelector } from '../components/EnvironmentSelector'
-import { CompilerOutput } from '../components/CompilerOutput'
-import { JobStatus } from '../components/JobStatus'
+import { CodeEditor } from '@/components/CodeEditor'
+import { EnvironmentSelector } from '@/components/EnvironmentSelector'
+import { CompilerOutput } from '@/components/CompilerOutput'
+import { JobStatus } from '@/components/JobStatus'
 import { useCompilation } from '../hooks/useCompilation'
 import {
   Language,
@@ -11,12 +11,31 @@ import {
   DEFAULT_ARCHITECTURE,
   DEFAULT_OS,
 } from '../types/api'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
-import { Button } from '../components/ui/button'
-import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert'
-import { Separator } from '../components/ui/separator'
-import { Github, Play, RotateCcw, Code2, Zap, AlertTriangle, Shield } from 'lucide-react'
-import { safeBase64Encode, validateCode, RateLimiter, checkSecureContext } from '../utils/security'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/ui/card'
+import { Button } from '@/ui/button'
+import { Alert, AlertDescription, AlertTitle } from '@/ui/alert'
+import { Separator } from '@/ui/separator'
+import {
+  Github,
+  Play,
+  RotateCcw,
+  Code2,
+  Zap,
+  AlertTriangle,
+  Shield,
+} from 'lucide-react'
+import {
+  safeBase64Encode,
+  validateCode,
+  RateLimiter,
+  checkSecureContext,
+} from '../utils/security'
 
 /**
  * Home page - Main compilation interface with shadcn/ui
@@ -96,12 +115,15 @@ export function Home() {
         code: encodedCode,
         language: config.language,
         compiler: config.compiler,
-        standard: language === 'cpp' || language === 'c++' ? standard : undefined,
+        standard:
+          language === 'cpp' || language === 'c++' ? standard : undefined,
         architecture: DEFAULT_ARCHITECTURE,
         os: DEFAULT_OS,
       })
     } catch (err) {
-      setValidationError(err instanceof Error ? err.message : 'Failed to encode code')
+      setValidationError(
+        err instanceof Error ? err.message : 'Failed to encode code'
+      )
     }
   }
 
@@ -243,7 +265,10 @@ export function Home() {
 
           {/* Job Status */}
           {(isCompiling || statusMessage) && (
-            <JobStatus isCompiling={isCompiling} statusMessage={statusMessage} />
+            <JobStatus
+              isCompiling={isCompiling}
+              statusMessage={statusMessage}
+            />
           )}
 
           {/* Validation Error */}
@@ -285,12 +310,11 @@ export function Home() {
       <footer className="border-t bg-card/50 mt-12">
         <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <p className="text-center text-sm text-muted-foreground">
-            Built with{' '}
-            <span className="font-semibold">React</span>,{' '}
+            Built with <span className="font-semibold">React</span>,{' '}
             <span className="font-semibold">TypeScript</span>,{' '}
             <span className="font-semibold">shadcn/ui</span>, and{' '}
-            <span className="font-semibold">Tailwind CSS</span> •
-            Powered by Docker containers 🐳
+            <span className="font-semibold">Tailwind CSS</span> • Powered by
+            Docker containers 🐳
           </p>
         </div>
       </footer>

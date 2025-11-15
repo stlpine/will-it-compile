@@ -1,5 +1,5 @@
 import { Editor } from '@monaco-editor/react'
-import { Language } from '../../types/api'
+import { Language } from '@/types/api.ts'
 
 interface CodeEditorProps {
   value: string
