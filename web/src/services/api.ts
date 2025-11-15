@@ -64,9 +64,7 @@ export async function submitCompilation(
     return response.data
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.data) {
-      throw new Error(
-        error.response.data.message || error.response.data.error
-      )
+      throw new Error(error.response.data.message || error.response.data.error)
     }
     throw error
   }
@@ -78,15 +76,11 @@ export async function submitCompilation(
  */
 export async function getJobResult(jobId: string): Promise<CompilationResult> {
   try {
-    const response = await apiClient.get<CompilationResult>(
-      `/compile/${jobId}`
-    )
+    const response = await apiClient.get<CompilationResult>(`/compile/${jobId}`)
     return response.data
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.data) {
-      throw new Error(
-        error.response.data.message || error.response.data.error
-      )
+      throw new Error(error.response.data.message || error.response.data.error)
     }
     throw error
   }
@@ -162,9 +156,7 @@ export async function getEnvironments(): Promise<Environment[]> {
     return response.data
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.data) {
-      throw new Error(
-        error.response.data.message || error.response.data.error
-      )
+      throw new Error(error.response.data.message || error.response.data.error)
     }
     throw error
   }

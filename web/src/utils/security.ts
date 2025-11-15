@@ -24,7 +24,9 @@ export function safeBase64Encode(str: string): string {
 
     return btoa(binaryString)
   } catch (error) {
-    throw new Error('Failed to encode source code. Please check for invalid characters.')
+    throw new Error(
+      'Failed to encode source code. Please check for invalid characters.'
+    )
   }
 }
 
@@ -91,23 +93,20 @@ export function sanitizeOutput(text: string): string {
 
   // Limit ANSI escape sequences to safe color codes only
   // Allow basic color codes but remove others like cursor movement
-  sanitized = sanitized.replace(
-    /\x1b\[([0-9;]+)m/g,
-    (match, codes) => {
-      // Only allow color codes (30-37, 40-47, 90-97, 100-107) and reset (0)
-      const safeCodes = codes.split(';').filter((code: string) => {
-        const num = parseInt(code, 10)
-        return (
-          num === 0 ||
-          (num >= 30 && num <= 37) ||
-          (num >= 40 && num <= 47) ||
-          (num >= 90 && num <= 97) ||
-          (num >= 100 && num <= 107)
-        )
-      })
-      return safeCodes.length > 0 ? `\x1b[${safeCodes.join(';')}m` : ''
-    }
-  )
+  sanitized = sanitized.replace(/\x1b\[([0-9;]+)m/g, (_match, codes) => {
+    // Only allow color codes (30-37, 40-47, 90-97, 100-107) and reset (0)
+    const safeCodes = codes.split(';').filter((code: string) => {
+      const num = parseInt(code, 10)
+      return (
+        num === 0 ||
+        (num >= 30 && num <= 37) ||
+        (num >= 40 && num <= 47) ||
+        (num >= 90 && num <= 97) ||
+        (num >= 100 && num <= 107)
+      )
+    })
+    return safeCodes.length > 0 ? `\x1b[${safeCodes.join(';')}m` : ''
+  })
 
   // Remove any remaining potentially dangerous escape sequences
   sanitized = sanitized.replace(/\x1b\[[^m]*[^m]/g, '')
@@ -135,11 +134,13 @@ export class RateLimiter {
     const now = Date.now()
 
     // Remove old requests outside the time window
-    this.requests = this.requests.filter(time => now - time < this.timeWindow)
+    this.requests = this.requests.filter((time) => now - time < this.timeWindow)
 
     if (this.requests.length >= this.maxRequests) {
       const oldestRequest = Math.min(...this.requests)
-      const retryAfter = Math.ceil((oldestRequest + this.timeWindow - now) / 1000)
+      const retryAfter = Math.ceil(
+        (oldestRequest + this.timeWindow - now) / 1000
+      )
       return { allowed: false, retryAfter }
     }
 
@@ -183,7 +184,8 @@ export function sanitizeErrorMessage(error: unknown): string {
  */
 export function isValidJobId(jobId: string): boolean {
   // UUIDs are safe, alphanumeric with hyphens
-  const uuidPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i
+  const uuidPattern =
+    /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i
   return uuidPattern.test(jobId)
 }
 
@@ -201,7 +203,7 @@ export function checkSecureContext(): void {
   if (!isSecureContext() && window.location.hostname !== 'localhost') {
     console.warn(
       '⚠️ WARNING: Application is not running in a secure context (HTTPS). ' +
-      'Data transmission may not be secure.'
+        'Data transmission may not be secure.'
     )
   }
 }

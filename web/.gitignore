@@ -7,7 +7,12 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
+
+# Lock files (pnpm-lock.yaml is tracked, others are ignored)
+package-lock.json
+yarn.lock
 dist
 dist-ssr
 *.local

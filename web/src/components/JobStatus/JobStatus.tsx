@@ -1,4 +1,4 @@
-import { Alert, AlertDescription, AlertTitle } from '../ui/alert'
+import { Alert, AlertDescription, AlertTitle } from '@/ui/alert'
 import { Loader2 } from 'lucide-react'
 
 interface JobStatusProps {

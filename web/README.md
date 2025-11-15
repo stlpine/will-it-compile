@@ -6,32 +6,44 @@ Modern React-based web interface for the **will-it-compile** service.
 
 ```bash
 # Install dependencies
-npm install
+pnpm install
 
 # Start development server (runs on port 3000)
-npm run dev
+pnpm dev
 
 # Build for production
-npm run build
+pnpm build
 
 # Preview production build
-npm run preview
+pnpm preview
 
 # Run tests
-npm test
+pnpm test
 ```
 
 ### Prerequisites
 
-- **Node.js** 18+ and **npm** 9+
+- **Node.js** 18+ with **Corepack** enabled
+- **pnpm** 10+ (managed via Corepack)
 - Backend API server running on `http://localhost:8080`
+
+#### Setting up pnpm (first time)
+
+This project uses **pnpm** via Corepack for faster installs and better disk efficiency:
+
+```bash
+# Enable Corepack (if not already enabled)
+corepack enable
+
+# The packageManager field in package.json will automatically use pnpm@10.22.0
+```
 
 ### First Time Setup
 
 1. **Install dependencies**:
    ```bash
    cd web
-   npm install
+   pnpm install
    ```
 
 2. **Configure environment** (optional):
@@ -48,7 +60,7 @@ npm test
 
 4. **Start frontend dev server**:
    ```bash
-   npm run dev
+   pnpm dev
    ```
 
 5. **Open browser**: Navigate to `http://localhost:3000`
@@ -254,7 +266,7 @@ VITE_API_URL=https://api.example.com/api/v1
 2. **Start frontend dev server** (in terminal 2):
    ```bash
    cd web
-   npm run dev
+   pnpm dev
    ```
 
 3. **Access application**: `http://localhost:3000`
@@ -263,33 +275,33 @@ VITE_API_URL=https://api.example.com/api/v1
 
 ```bash
 # Lint code
-npm run lint
+pnpm lint
 
 # Format code
-npm run format
+pnpm format
 
 # Type check
-npm run type-check
+pnpm type-check
 ```
 
 ## 🧪 Testing
 
 ```bash
 # Run unit tests
-npm test
+pnpm test
 
 # Run with coverage
-npm run test:coverage
+pnpm test:coverage
 ```
 
 ## 📦 Building for Production
 
 ```bash
 # Create production build
-npm run build
+pnpm build
 
 # Preview production build
-npm run preview
+pnpm preview
 
 # Build output location
 ls -la dist/
@@ -300,18 +312,28 @@ The production build will be in the `dist/` directory.
 ### Deployment Options
 
 1. **Static Hosting** (Vercel, Netlify, Cloudflare Pages)
-   - Build command: `npm run build`
+   - Build command: `pnpm build`
    - Output directory: `dist`
    - Environment variables: Set `VITE_API_URL`
 
 2. **Docker Container**
    ```dockerfile
    FROM node:18-alpine AS builder
+
+   # Enable Corepack for pnpm
+   RUN corepack enable
+
    WORKDIR /app
-   COPY package*.json ./
-   RUN npm ci
+
+   # Copy package files
+   COPY package.json pnpm-lock.yaml ./
+
+   # Install dependencies
+   RUN pnpm install --frozen-lockfile
+
+   # Copy source and build
    COPY . .
-   RUN npm run build
+   RUN pnpm build
 
    FROM nginx:alpine
    COPY --from=builder /app/dist /usr/share/nginx/html
@@ -332,8 +354,8 @@ The production build will be in the `dist/` directory.
 
 ## 🐛 Common Issues
 
-### Issue: npm install fails
-**Solution**: Ensure you have Node.js 18+ and npm 9+. Try `npm cache clean --force`
+### Issue: pnpm install fails
+**Solution**: Ensure you have Node.js 18+ and Corepack enabled (`corepack enable`). Try `pnpm store prune`
 
 ### Issue: API connection refused
 **Solution**: Ensure backend API is running on `http://localhost:8080`
