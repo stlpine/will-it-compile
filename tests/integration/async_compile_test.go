@@ -1,5 +1,3 @@
-//go:build go1.25
-
 package integration
 
 import (
@@ -9,7 +7,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"testing/synctest"
 	"time"
 
 	"github.com/stlpine/will-it-compile/internal/api"
@@ -19,74 +16,72 @@ import (
 )
 
 // TestAsyncCompilation tests asynchronous compilation with real Docker.
-// Note: Uses virtualized time for goroutine coordination, but Docker I/O
-// still operates on real time (not durably blocking).
+// Note: Uses real time because Docker I/O operations are not durably blocking
+// and don't work with synctest's virtualized time.
 func TestAsyncCompilation(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	synctest.Test(t, func(t *testing.T) {
-		server, err := api.NewServer()
-		require.NoError(t, err)
-		defer func() {
-			if err := server.Close(); err != nil {
-				t.Logf("Error closing server: %v", err)
-			}
-		}()
+	server, err := api.NewServer()
+	require.NoError(t, err)
+	defer func() {
+		if err := server.Close(); err != nil {
+			t.Logf("Error closing server: %v", err)
+		}
+	}()
 
-		e := api.NewEchoServer(server, false)
+	e := api.NewEchoServer(server, false)
 
-		sourceCode := `#include <iostream>
+	sourceCode := `#include <iostream>
 int main() {
     std::cout << "Hello, World!" << std::endl;
     return 0;
 }`
 
-		encodedCode := base64.StdEncoding.EncodeToString([]byte(sourceCode))
-		request := models.CompilationRequest{
-			Code:     encodedCode,
-			Language: models.LanguageCpp,
-			Compiler: models.CompilerGCC13,
-			Standard: models.StandardCpp20,
-		}
+	encodedCode := base64.StdEncoding.EncodeToString([]byte(sourceCode))
+	request := models.CompilationRequest{
+		Code:     encodedCode,
+		Language: models.LanguageCpp,
+		Compiler: models.CompilerGCC13,
+		Standard: models.StandardCpp20,
+	}
 
-		body, err := json.Marshal(request)
-		require.NoError(t, err)
+	body, err := json.Marshal(request)
+	require.NoError(t, err)
 
-		// Submit job
-		req := httptest.NewRequest(http.MethodPost, "/api/v1/compile", bytes.NewReader(body))
-		req.Header.Set("Content-Type", "application/json")
-		rec := httptest.NewRecorder()
+	// Submit job
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/compile", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
 
-		e.ServeHTTP(rec, req)
+	e.ServeHTTP(rec, req)
 
-		assert.Equal(t, http.StatusAccepted, rec.Code)
+	assert.Equal(t, http.StatusAccepted, rec.Code)
 
-		var jobResponse models.JobResponse
-		err = json.NewDecoder(rec.Body).Decode(&jobResponse)
-		require.NoError(t, err)
-		assert.NotEmpty(t, jobResponse.JobID)
+	var jobResponse models.JobResponse
+	err = json.NewDecoder(rec.Body).Decode(&jobResponse)
+	require.NoError(t, err)
+	assert.NotEmpty(t, jobResponse.JobID)
 
-		// Poll for completion (Docker I/O is not durably blocking)
-		pollForCompletion(t, e, jobResponse.JobID, 10*time.Second)
+	// Poll for completion (Docker I/O is not durably blocking)
+	pollForCompletion(t, e, jobResponse.JobID, 10*time.Second)
 
-		// Verify result
-		req = httptest.NewRequest(http.MethodGet, "/api/v1/compile/"+jobResponse.JobID, nil)
-		rec = httptest.NewRecorder()
+	// Verify result
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/compile/"+jobResponse.JobID, nil)
+	rec = httptest.NewRecorder()
 
-		e.ServeHTTP(rec, req)
+	e.ServeHTTP(rec, req)
 
-		assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, http.StatusOK, rec.Code)
 
-		var result models.CompilationResult
-		err = json.NewDecoder(rec.Body).Decode(&result)
-		require.NoError(t, err)
+	var result models.CompilationResult
+	err = json.NewDecoder(rec.Body).Decode(&result)
+	require.NoError(t, err)
 
-		assert.True(t, result.Success)
-		assert.True(t, result.Compiled)
-		assert.Equal(t, 0, result.ExitCode)
-	})
+	assert.True(t, result.Success)
+	assert.True(t, result.Compiled)
+	assert.Equal(t, 0, result.ExitCode)
 }
 
 // pollForCompletion polls until job completes or timeout.
@@ -106,7 +101,11 @@ func pollForCompletion(t *testing.T, handler http.Handler, jobID string, timeout
 
 		var result models.CompilationResult
 		if err := json.NewDecoder(rec.Body).Decode(&result); err == nil {
-			return
+			// Check if this is actually a completed result (not just a JobResponse)
+			// A completed result will have Duration > 0 or JobID will be set with actual data
+			if result.JobID != "" && result.Duration > 0 {
+				return
+			}
 		}
 
 		<-ticker.C
