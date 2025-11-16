@@ -875,6 +875,105 @@ mockDocker := &MockDockerClient{
 - Use test suites for shared setup/teardown logic
 - Mock external dependencies (Docker, HTTP clients) for unit tests
 - Keep integration tests separate from unit tests
+- Use `testing/synctest` (Go 1.25+) for testing concurrent code with virtualized time
+
+### Testing Concurrent Code with testing/synctest (Go 1.25+)
+
+**New in Go 1.25**: The `testing/synctest` package provides support for testing concurrent code with deterministic execution and virtualized time.
+
+**Key Benefits**:
+- **Instant test execution**: Tests with `time.Sleep()` run instantly (virtualized time)
+- **Deterministic**: Goroutine synchronization is predictable and reproducible
+- **No arbitrary delays**: No need to guess sleep durations
+- **Easier debugging**: Concurrent bugs become deterministic
+
+**synctest API**:
+- `synctest.Test(t *testing.T, f func(*testing.T))` - Runs test in an isolated "bubble" with virtualized time
+- `synctest.Wait()` - Blocks until all other goroutines in the bubble are durably blocked
+
+**Key Concepts**:
+1. **Bubble**: An isolated execution environment for the test
+2. **Virtualized Time**: Time only advances when all goroutines are durably blocked
+3. **Durable Blocking**: Blocked on operations that can only be unblocked by other goroutines in the same bubble
+
+**Durably Blocking Operations** (time advances automatically):
+- Blocking send/receive on channels created within the bubble
+- `time.Sleep`
+- `sync.Cond.Wait`
+- `sync.WaitGroup.Wait`
+
+**Not Durably Blocking** (goroutine can be unblocked from outside the bubble):
+- Locking a `sync.Mutex` or `sync.RWMutex`
+- I/O operations (network, file system, Docker API)
+- System calls
+
+**Usage Example**:
+
+```go
+//go:build go1.25
+
+func TestAsyncJobProcessing(t *testing.T) {
+    tests := []struct {
+        name       string
+        delay      time.Duration
+        shouldFail bool
+    }{
+        {"successful compilation", 2 * time.Second, false},
+        {"failed compilation", 500 * time.Millisecond, true},
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            synctest.Test(t, func(t *testing.T) {
+                server := &Server{
+                    compiler: &mockCompiler{
+                        compileDelay: tt.delay,
+                        shouldFail:   tt.shouldFail,
+                    },
+                    jobs: newJobStore(),
+                }
+
+                done := make(chan struct{})
+                go func() {
+                    server.processJob(job)
+                    close(done)
+                }()
+
+                <-done // Happens instantly!
+
+                result, _ := server.jobs.GetResult(job.ID)
+                assert.Equal(t, !tt.shouldFail, result.Success)
+            })
+        })
+    }
+}
+```
+
+**Important Notes**:
+- Tests using synctest must have `//go:build go1.25` build tag
+- Channels must be used to signal goroutine completion (not just `synctest.Wait()`)
+- I/O operations (Docker, network) are not durably blocking - use mocks for full time virtualization
+- Table-driven tests work great with synctest for testing multiple scenarios
+- See `internal/api/async_job_test.go` for complete examples
+
+**When to Use synctest**:
+- Testing async job processing with delays
+- Testing timeout behavior
+- Testing goroutine coordination
+- Any test with `time.Sleep()` that you want to run instantly
+
+**When NOT to Use synctest**:
+- Tests with real I/O (Docker, network, file system) - time won't fully virtualize
+- Simple synchronous tests
+- Tests that don't involve goroutines or time
+
+**Test Files Using Virtualized Time**:
+- `internal/api/async_job_test.go` - Async job processing unit tests with mocked compiler
+  - `TestAsyncJobProcessing` - Table-driven tests for success/failure scenarios
+  - `TestConcurrentJobs` - Multiple jobs processing in parallel
+  - `TestJobLifecycle` - Job status transitions
+- `tests/integration/async_compile_test.go` - Integration test with real Docker
+  - `TestAsyncCompilation` - Full compilation flow (limited time virtualization due to Docker I/O)
 
 **Running Tests**:
 ```bash
@@ -900,8 +999,11 @@ go test -short ./...
 **Test Files**:
 - `tests/integration/api_test.go` - Basic integration tests with testify assertions
 - `tests/integration/api_suite_test.go` - Suite-based integration tests
+- `tests/integration/async_compile_test.go` - Async compilation with virtualized time (Go 1.25+)
 - `tests/integration/table_driven_test.go` - Comprehensive table-driven scenarios
+- `internal/api/async_job_test.go` - Async job processing unit tests with virtualized time (Go 1.25+)
 - `internal/compiler/compiler_test.go` - Unit tests for compiler with Docker mocks
+- `internal/compiler/interface.go` - CompilerInterface for dependency injection and mocking
 - `internal/docker/mock_test.go` - Mock Docker client implementation
 - `internal/docker/interface.go` - DockerClient interface for dependency injection
 
@@ -926,7 +1028,20 @@ security: update seccomp profile
 
 **Current Version**: MVP (Phase 1)
 
-**Go Version**: 1.24 (specified in go.mod, mise.toml, .tool-versions)
+**Go Version**: 1.25.4 (latest patch)
+- Minimum version: `go 1.25` (in go.mod)
+- Toolchain version: `toolchain go1.25.4` (in go.mod - ensures reproducible builds)
+- Tool version managers: mise.toml (1.25), .tool-versions (1.25.4)
+- CI/CD: GitHub workflows use GO_VERSION env var (1.25)
+
+**Toolchain Management**:
+- The `toolchain go1.25.4` directive ensures all developers and CI use the exact same Go version
+- Provides reproducible builds across all environments
+- Uses Go's automatic toolchain download (requires network on first use)
+- Override with `GOTOOLCHAIN=local` to use locally installed version
+
+**Go 1.25 Features Used**:
+- `testing/synctest` - Testing concurrent code with virtualized time
 
 **Docker Images**:
 - `will-it-compile/cpp-gcc:13-alpine` - C++ GCC 13
@@ -981,8 +1096,8 @@ make run
 
 ---
 
-**Last Updated**: 2025-11-14
+**Last Updated**: 2025-11-16
 **Project Phase**: MVP (Phase 1) + Phase 2 features
-**Go Version**: 1.24
+**Go Version**: 1.25.4
 **Project Structure**: Monorepo (backend + frontend + docs)
 **Claude Code Version**: This project was implemented with Claude Code
