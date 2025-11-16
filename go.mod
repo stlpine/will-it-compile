@@ -1,8 +1,8 @@
 module github.com/stlpine/will-it-compile
 
-go 1.24.0
+go 1.25
 
-toolchain go1.24.10
+toolchain go1.25.4
 
 require (
 	github.com/charmbracelet/bubbles v0.21.0

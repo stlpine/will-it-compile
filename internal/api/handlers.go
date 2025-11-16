@@ -13,7 +13,7 @@ import (
 
 // Server represents the API server.
 type Server struct {
-	compiler *compiler.Compiler
+	compiler compiler.CompilerInterface
 	jobs     *jobStore
 }
 
