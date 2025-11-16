@@ -247,3 +247,132 @@ func TestJobLifecycle(t *testing.T) {
 		assert.True(t, finalJob.CompletedAt.After(*finalJob.StartedAt))
 	})
 }
+
+// TestRapidJobSubmission tests handling of rapid consecutive job submissions.
+func TestRapidJobSubmission(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		server := &Server{
+			compiler: &mockCompiler{compileDelay: 50 * time.Millisecond, shouldFail: false},
+			jobs:     newJobStore(),
+		}
+
+		const numJobs = 20
+		done := make(chan string, numJobs)
+
+		// Submit jobs rapidly
+		for i := 0; i < numJobs; i++ {
+			job := models.CompilationJob{
+				ID: fmt.Sprintf("rapid-job-%d", i),
+				Request: models.CompilationRequest{
+					Code:     "I2luY2x1ZGUgPGlvc3RyZWFtPg==",
+					Language: models.LanguageCpp,
+					Compiler: models.CompilerGCC13,
+				},
+				Status:    models.StatusQueued,
+				CreatedAt: time.Now(),
+			}
+
+			go func(j models.CompilationJob) {
+				server.processJob(j)
+				done <- j.ID
+			}(job)
+		}
+
+		// Collect all completions
+		completed := make(map[string]bool)
+		for i := 0; i < numJobs; i++ {
+			jobID := <-done
+			completed[jobID] = true
+		}
+
+		// Verify all jobs completed
+		assert.Len(t, completed, numJobs)
+		for i := 0; i < numJobs; i++ {
+			jobID := fmt.Sprintf("rapid-job-%d", i)
+			assert.True(t, completed[jobID], "Job %s should have completed", jobID)
+
+			job, exists := server.jobs.Get(jobID)
+			require.True(t, exists)
+			assert.Equal(t, models.StatusCompleted, job.Status)
+		}
+	})
+}
+
+// TestMixedSuccessFailure tests concurrent mix of successful and failed compilations.
+func TestMixedSuccessFailure(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		const numJobs = 10
+		done := make(chan string, numJobs)
+
+		for i := 0; i < numJobs; i++ {
+			shouldFail := i%2 == 0 // Alternate success/failure
+			server := &Server{
+				compiler: &mockCompiler{compileDelay: 100 * time.Millisecond, shouldFail: shouldFail},
+				jobs:     newJobStore(),
+			}
+
+			job := models.CompilationJob{
+				ID: fmt.Sprintf("mixed-job-%d", i),
+				Request: models.CompilationRequest{
+					Code:     "I2luY2x1ZGUgPGlvc3RyZWFtPg==",
+					Language: models.LanguageCpp,
+					Compiler: models.CompilerGCC13,
+				},
+				Status:    models.StatusQueued,
+				CreatedAt: time.Now(),
+			}
+
+			go func(s *Server, j models.CompilationJob, fail bool) {
+				s.processJob(j)
+				done <- j.ID
+			}(server, job, shouldFail)
+		}
+
+		// Wait for all completions
+		for i := 0; i < numJobs; i++ {
+			<-done
+		}
+	})
+}
+
+// TestJobTimestamps verifies timing information is recorded correctly.
+func TestJobTimestamps(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		server := &Server{
+			compiler: &mockCompiler{compileDelay: 200 * time.Millisecond, shouldFail: false},
+			jobs:     newJobStore(),
+		}
+
+		startTime := time.Now()
+
+		job := models.CompilationJob{
+			ID: "timestamp-test",
+			Request: models.CompilationRequest{
+				Code:     "I2luY2x1ZGUgPGlvc3RyZWFtPg==",
+				Language: models.LanguageCpp,
+				Compiler: models.CompilerGCC13,
+			},
+			Status:    models.StatusQueued,
+			CreatedAt: startTime,
+		}
+
+		done := make(chan struct{})
+		go func() {
+			server.processJob(job)
+			close(done)
+		}()
+		<-done
+
+		finalJob, _ := server.jobs.Get(job.ID)
+
+		// Verify timestamps make sense
+		assert.NotNil(t, finalJob.StartedAt)
+		assert.NotNil(t, finalJob.CompletedAt)
+		assert.True(t, finalJob.StartedAt.After(startTime) || finalJob.StartedAt.Equal(startTime))
+		assert.True(t, finalJob.CompletedAt.After(*finalJob.StartedAt))
+
+		// With virtualized time, the duration should still reflect the delay
+		duration := finalJob.CompletedAt.Sub(*finalJob.StartedAt)
+		assert.True(t, duration >= 200*time.Millisecond, "Duration should be at least 200ms, got %v", duration)
+	})
+}
