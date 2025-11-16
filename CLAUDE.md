@@ -1028,7 +1028,9 @@ security: update seccomp profile
 
 **Current Version**: MVP (Phase 1)
 
-**Go Version**: 1.25 (specified in go.mod, mise.toml, .tool-versions)
+**Go Version**: 1.25.4 (latest patch, specified in .tool-versions)
+- Minimum version: 1.25 (specified in go.mod)
+- Tool version managers: mise.toml, .tool-versions
 
 **Go 1.25 Features Used**:
 - `testing/synctest` - Testing concurrent code with virtualized time
@@ -1088,6 +1090,6 @@ make run
 
 **Last Updated**: 2025-11-16
 **Project Phase**: MVP (Phase 1) + Phase 2 features
-**Go Version**: 1.25
+**Go Version**: 1.25.4
 **Project Structure**: Monorepo (backend + frontend + docs)
 **Claude Code Version**: This project was implemented with Claude Code
