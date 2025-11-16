@@ -1028,9 +1028,17 @@ security: update seccomp profile
 
 **Current Version**: MVP (Phase 1)
 
-**Go Version**: 1.25.4 (latest patch, specified in .tool-versions)
-- Minimum version: 1.25 (specified in go.mod)
-- Tool version managers: mise.toml, .tool-versions
+**Go Version**: 1.25.4 (latest patch)
+- Minimum version: `go 1.25` (in go.mod)
+- Toolchain version: `toolchain go1.25.4` (in go.mod - ensures reproducible builds)
+- Tool version managers: mise.toml (1.25), .tool-versions (1.25.4)
+- CI/CD: GitHub workflows use GO_VERSION env var (1.25)
+
+**Toolchain Management**:
+- The `toolchain go1.25.4` directive ensures all developers and CI use the exact same Go version
+- Provides reproducible builds across all environments
+- Uses Go's automatic toolchain download (requires network on first use)
+- Override with `GOTOOLCHAIN=local` to use locally installed version
 
 **Go 1.25 Features Used**:
 - `testing/synctest` - Testing concurrent code with virtualized time
