@@ -913,27 +913,39 @@ mockDocker := &MockDockerClient{
 //go:build go1.25
 
 func TestAsyncJobProcessing(t *testing.T) {
-    synctest.Test(t, func(t *testing.T) {
-        // Create mock compiler with 2-second delay
-        server := &Server{
-            compiler: &mockCompiler{compileDelay: 2 * time.Second},
-            jobs:     newJobStore(),
-        }
+    tests := []struct {
+        name       string
+        delay      time.Duration
+        shouldFail bool
+    }{
+        {"successful compilation", 2 * time.Second, false},
+        {"failed compilation", 500 * time.Millisecond, true},
+    }
 
-        // Start async processing
-        done := make(chan struct{})
-        go func() {
-            server.processJob(job)
-            close(done)
-        }()
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            synctest.Test(t, func(t *testing.T) {
+                server := &Server{
+                    compiler: &mockCompiler{
+                        compileDelay: tt.delay,
+                        shouldFail:   tt.shouldFail,
+                    },
+                    jobs: newJobStore(),
+                }
 
-        // Wait for completion - happens instantly with synctest!
-        <-done
+                done := make(chan struct{})
+                go func() {
+                    server.processJob(job)
+                    close(done)
+                }()
 
-        // Verify result
-        result, _ := server.jobs.GetResult(job.ID)
-        assert.True(t, result.Success)
-    })
+                <-done // Happens instantly!
+
+                result, _ := server.jobs.GetResult(job.ID)
+                assert.Equal(t, !tt.shouldFail, result.Success)
+            })
+        })
+    }
 }
 ```
 
@@ -941,7 +953,8 @@ func TestAsyncJobProcessing(t *testing.T) {
 - Tests using synctest must have `//go:build go1.25` build tag
 - Channels must be used to signal goroutine completion (not just `synctest.Wait()`)
 - I/O operations (Docker, network) are not durably blocking - use mocks for full time virtualization
-- See `internal/api/process_synctest_test.go` for complete examples
+- Table-driven tests work great with synctest for testing multiple scenarios
+- See `internal/api/async_job_test.go` for complete examples
 
 **When to Use synctest**:
 - Testing async job processing with delays
@@ -954,9 +967,13 @@ func TestAsyncJobProcessing(t *testing.T) {
 - Simple synchronous tests
 - Tests that don't involve goroutines or time
 
-**Test Files Using synctest**:
-- `internal/api/process_synctest_test.go` - Async job processing with mocked compiler
-- `tests/integration/api_synctest_test.go` - Integration tests (limited time virtualization due to Docker I/O)
+**Test Files Using Virtualized Time**:
+- `internal/api/async_job_test.go` - Async job processing unit tests with mocked compiler
+  - `TestAsyncJobProcessing` - Table-driven tests for success/failure scenarios
+  - `TestConcurrentJobs` - Multiple jobs processing in parallel
+  - `TestJobLifecycle` - Job status transitions
+- `tests/integration/async_compile_test.go` - Integration test with real Docker
+  - `TestAsyncCompilation` - Full compilation flow (limited time virtualization due to Docker I/O)
 
 **Running Tests**:
 ```bash
@@ -982,9 +999,9 @@ go test -short ./...
 **Test Files**:
 - `tests/integration/api_test.go` - Basic integration tests with testify assertions
 - `tests/integration/api_suite_test.go` - Suite-based integration tests
-- `tests/integration/api_synctest_test.go` - Integration tests using testing/synctest (Go 1.25+)
+- `tests/integration/async_compile_test.go` - Async compilation with virtualized time (Go 1.25+)
 - `tests/integration/table_driven_test.go` - Comprehensive table-driven scenarios
-- `internal/api/process_synctest_test.go` - Unit tests for async job processing with synctest (Go 1.25+)
+- `internal/api/async_job_test.go` - Async job processing unit tests with virtualized time (Go 1.25+)
 - `internal/compiler/compiler_test.go` - Unit tests for compiler with Docker mocks
 - `internal/compiler/interface.go` - CompilerInterface for dependency injection and mocking
 - `internal/docker/mock_test.go` - Mock Docker client implementation
