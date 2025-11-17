@@ -383,12 +383,16 @@ Future versions may support a configuration file at:
 ### "No such image" Error
 
 ```
-Error: compilation error: No such image: will-it-compile/cpp-gcc:13-alpine
+Error: compilation error: No such image: gcc:13
 ```
 
-**Solution:** Build the Docker images first:
+**Solution:** Pull the official Docker images first:
 ```bash
-make docker-build
+make docker-pull
+# or manually:
+docker pull gcc:13
+docker pull golang:1.22-alpine
+docker pull rust:1.75-alpine
 ```
 
 ### "Cannot connect to Docker daemon" Error

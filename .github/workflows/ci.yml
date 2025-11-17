@@ -62,7 +62,7 @@ jobs:
 
       - name: Pull official compiler images
         run: |
-          docker pull gcc:13-alpine
+          docker pull gcc:13
           docker pull golang:1.22-alpine
           docker pull rust:1.75-alpine
 
@@ -164,6 +164,6 @@ jobs:
           echo "📦 stlpine/will-it-compile-api:${{ steps.meta.outputs.sha_short }}"
           echo ""
           echo "ℹ️  Compiler images: Using official Docker images"
-          echo "   - gcc:9-alpine, gcc:11-alpine, gcc:13-alpine"
-          echo "   - golang:1.22-alpine, golang:1.23-alpine"
-          echo "   - rust:1.75-alpine, rust:1.80-alpine"
+          echo "   - gcc:9, gcc:11, gcc:13 (Debian-based)"
+          echo "   - golang:1.22-alpine, golang:1.23-alpine (Alpine-based)"
+          echo "   - rust:1.75-alpine, rust:1.80-alpine (Alpine-based)"

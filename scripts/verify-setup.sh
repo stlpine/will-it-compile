@@ -22,7 +22,7 @@ MISSING_IMAGES=()
 
 # List of required official images (Docker will pull automatically if missing)
 REQUIRED_IMAGES=(
-    "gcc:13-alpine"
+    "gcc:13"
     "golang:1.22-alpine"
     "rust:1.75-alpine"
 )

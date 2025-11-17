@@ -23,7 +23,7 @@ type CompilationConfig struct {
 	// JobID is a unique identifier for this compilation
 	JobID string
 
-	// ImageTag is the container image to use (e.g., "gcc:13-alpine")
+	// ImageTag is the container image to use (e.g., "gcc:13", "golang:1.22-alpine")
 	ImageTag string
 
 	// SourceCode is the actual source code to compile

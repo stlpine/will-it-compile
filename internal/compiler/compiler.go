@@ -86,7 +86,7 @@ func getHardcodedEnvironments() map[string]models.EnvironmentSpec {
 			Standard:     models.StandardCpp20,
 			Architecture: models.ArchX86_64,
 			OS:           models.OSLinux,
-			ImageTag:     "gcc:13-alpine",
+			ImageTag:     "gcc:13",
 		},
 	}
 }
@@ -118,7 +118,7 @@ func (c *Compiler) verifyImages(ctx context.Context) error {
 			imageListSb106.WriteString("\n  - " + img)
 		}
 		imageList += imageListSb106.String()
-		return fmt.Errorf("%w:%s\n\nPlease pull official images using:\n  make docker-pull\n  or: docker pull gcc:13-alpine",
+		return fmt.Errorf("%w:%s\n\nPlease pull official images using:\n  make docker-pull\n  or: docker pull gcc:13",
 			ErrMissingRequiredImages, imageList)
 	}
 

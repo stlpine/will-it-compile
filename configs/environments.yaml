@@ -1,32 +1,32 @@
 # Supported compilation environments
 # Using official Docker images for better maintainability and multi-arch support
 environments:
-  # C++ with multiple GCC versions
+  # C++ with multiple GCC versions (official Debian-based images)
   - language: cpp
     compilers:
       - name: gcc
         version: "9"
-        image: gcc:9-alpine
+        image: gcc:9
         standards: [c++11, c++14, c++17, c++20]
         architectures: [x86_64, arm64]
       - name: gcc
         version: "10"
-        image: gcc:10-alpine
+        image: gcc:10
         standards: [c++11, c++14, c++17, c++20]
         architectures: [x86_64, arm64]
       - name: gcc
         version: "11"
-        image: gcc:11-alpine
+        image: gcc:11
         standards: [c++11, c++14, c++17, c++20, c++23]
         architectures: [x86_64, arm64]
       - name: gcc
         version: "12"
-        image: gcc:12-alpine
+        image: gcc:12
         standards: [c++11, c++14, c++17, c++20, c++23]
         architectures: [x86_64, arm64]
       - name: gcc
         version: "13"
-        image: gcc:13-alpine
+        image: gcc:13
         standards: [c++11, c++14, c++17, c++20, c++23]
         architectures: [x86_64, arm64]
       - name: clang
@@ -35,22 +35,22 @@ environments:
         standards: [c++11, c++14, c++17, c++20, c++23]
         architectures: [x86_64, arm64]
 
-  # C with multiple GCC versions (same images as C++)
+  # C with multiple GCC versions (official Debian-based images)
   - language: c
     compilers:
       - name: gcc
         version: "9"
-        image: gcc:9-alpine
+        image: gcc:9
         standards: [c89, c99, c11, c17]
         architectures: [x86_64, arm64]
       - name: gcc
         version: "11"
-        image: gcc:11-alpine
+        image: gcc:11
         standards: [c89, c99, c11, c17]
         architectures: [x86_64, arm64]
       - name: gcc
         version: "13"
-        image: gcc:13-alpine
+        image: gcc:13
         standards: [c89, c99, c11, c17, c23]
         architectures: [x86_64, arm64]
 

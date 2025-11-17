@@ -37,7 +37,7 @@ go mod download
 
 echo ""
 echo "Pulling official compiler images..."
-docker pull gcc:13-alpine
+docker pull gcc:13
 docker pull golang:1.22-alpine
 docker pull rust:1.75-alpine
 

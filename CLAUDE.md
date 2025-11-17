@@ -314,7 +314,7 @@ make docker-pull
 docker run --rm \
   -v /path/to/source.cpp:/workspace/source.cpp:ro \
   -w /workspace \
-  gcc:13-alpine \
+  gcc:13 \
   sh -c 'g++ -std=c++17 source.cpp -o output && ./output'
 
 # Clean up Docker images
@@ -1077,9 +1077,9 @@ security: update seccomp profile
 
 **Docker Images**:
 - Official images from Docker Hub:
-  - `gcc:9-alpine`, `gcc:11-alpine`, `gcc:13-alpine` - C/C++ compilers
-  - `golang:1.22-alpine`, `golang:1.23-alpine` - Go compilers
-  - `rust:1.75-alpine`, `rust:1.80-alpine` - Rust compilers
+  - `gcc:9`, `gcc:11`, `gcc:13` - C/C++ compilers (Debian-based)
+  - `golang:1.22-alpine`, `golang:1.23-alpine` - Go compilers (Alpine-based)
+  - `rust:1.75-alpine`, `rust:1.80-alpine` - Rust compilers (Alpine-based)
 
 **Versioning Strategy**:
 - API: v1, v2, etc. (URL versioning)

@@ -166,7 +166,9 @@ make run
 ```bash
 kind create cluster
 kind load docker-image will-it-compile/api:latest
-kind load docker-image will-it-compile/cpp-gcc:13-alpine
+kind load docker-image gcc:13
+kind load docker-image golang:1.22-alpine
+kind load docker-image rust:1.75-alpine
 helm install will-it-compile ./deployments/helm/will-it-compile \
   --values ./deployments/helm/will-it-compile/values-dev.yaml
 ```
@@ -355,7 +357,7 @@ spec:
     spec:
       initContainers:
       - name: pull-cpp-gcc
-        image: will-it-compile/cpp-gcc:13-alpine
+        image: gcc:13
         command: ['sh', '-c', 'echo Image pulled']
       containers:
       - name: pause

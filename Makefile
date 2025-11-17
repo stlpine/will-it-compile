@@ -69,14 +69,14 @@ clean: ## Clean build artifacts
 
 docker-pull: ## Pull official compiler images for local testing
 	@echo "Pulling official compiler images..."
-	@echo "→ GCC (C/C++)..."
-	@$(DOCKER) pull gcc:9-alpine
-	@$(DOCKER) pull gcc:11-alpine
-	@$(DOCKER) pull gcc:13-alpine
-	@echo "→ Go..."
+	@echo "→ GCC (C/C++ - Debian-based)..."
+	@$(DOCKER) pull gcc:9
+	@$(DOCKER) pull gcc:11
+	@$(DOCKER) pull gcc:13
+	@echo "→ Go (Alpine-based)..."
 	@$(DOCKER) pull golang:1.22-alpine
 	@$(DOCKER) pull golang:1.23-alpine
-	@echo "→ Rust..."
+	@echo "→ Rust (Alpine-based)..."
 	@$(DOCKER) pull rust:1.75-alpine
 	@$(DOCKER) pull rust:1.80-alpine
 	@echo "✓ All compiler images pulled"
@@ -85,7 +85,7 @@ docker-build: docker-pull ## Pull compiler images (alias for backward compatibil
 
 docker-clean: ## Remove Docker images
 	@echo "Removing official compiler images..."
-	@$(DOCKER) rmi gcc:9-alpine gcc:11-alpine gcc:13-alpine || true
+	@$(DOCKER) rmi gcc:9 gcc:11 gcc:13 || true
 	@$(DOCKER) rmi golang:1.22-alpine golang:1.23-alpine || true
 	@$(DOCKER) rmi rust:1.75-alpine rust:1.80-alpine || true
 	@echo "✓ Cleanup complete"
@@ -96,7 +96,7 @@ docker-test: docker-pull ## Test Docker image with official GCC
 	@$(DOCKER) run --rm \
 		-v /tmp/test.cpp:/workspace/source.cpp:ro \
 		-w /workspace \
-		gcc:13-alpine \
+		gcc:13 \
 		sh -c 'g++ -std=c++17 source.cpp -o output && ./output'
 	@rm /tmp/test.cpp
 	@echo "✓ Docker test passed"
