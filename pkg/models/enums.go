@@ -33,6 +33,7 @@ func (l Language) Normalize() Language {
 type Compiler string
 
 const (
+	CompilerGCC9    Compiler = "gcc-9"
 	CompilerGCC13   Compiler = "gcc-13"
 	CompilerClang15 Compiler = "clang-15"
 	CompilerGo      Compiler = "go"
