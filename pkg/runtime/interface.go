@@ -29,6 +29,10 @@ type CompilationConfig struct {
 	// SourceCode is the actual source code to compile
 	SourceCode string
 
+	// CompileCommand is the shell command to run (e.g., "g++ -std=c++17 source.cpp -o output")
+	// If empty, a default will be used based on the image
+	CompileCommand string
+
 	// Env is a list of environment variables in "KEY=VALUE" format
 	Env []string
 

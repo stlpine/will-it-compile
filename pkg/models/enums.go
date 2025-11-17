@@ -43,7 +43,7 @@ const (
 // Valid returns true if the compiler is valid.
 func (c Compiler) Valid() bool {
 	switch c {
-	case CompilerGCC13, CompilerClang15, CompilerGo, CompilerRustc:
+	case CompilerGCC9, CompilerGCC13, CompilerClang15, CompilerGo, CompilerRustc:
 		return true
 	default:
 		return false

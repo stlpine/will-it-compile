@@ -30,10 +30,11 @@ func NewDockerRuntime() (*DockerRuntime, error) {
 func (d *DockerRuntime) Compile(ctx context.Context, config runtime.CompilationConfig) (*runtime.CompilationOutput, error) {
 	// Convert runtime.CompilationConfig to docker.CompilationConfig
 	dockerConfig := docker.CompilationConfig{
-		ImageTag:   config.ImageTag,
-		SourceCode: config.SourceCode,
-		WorkDir:    config.WorkDir,
-		Env:        config.Env,
+		ImageTag:       config.ImageTag,
+		SourceCode:     config.SourceCode,
+		WorkDir:        config.WorkDir,
+		Env:            config.Env,
+		CompileCommand: config.CompileCommand,
 	}
 
 	// Apply timeout if specified

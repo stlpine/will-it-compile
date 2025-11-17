@@ -181,12 +181,16 @@ func (c *Compiler) Compile(ctx context.Context, job models.CompilationJob) model
 		}
 	}
 
+	// Build compile command based on language
+	compileCmd := c.buildCompileCommand(envSpec)
+
 	// Prepare runtime configuration
 	config := runtime.CompilationConfig{
-		JobID:      job.ID,
-		ImageTag:   envSpec.ImageTag,
-		SourceCode: string(sourceCode),
-		WorkDir:    "/workspace",
+		JobID:          job.ID,
+		ImageTag:       envSpec.ImageTag,
+		SourceCode:     string(sourceCode),
+		CompileCommand: compileCmd,
+		WorkDir:        "/workspace",
 		Env: []string{
 			fmt.Sprintf("CPP_STANDARD=%s", envSpec.Standard),
 			"SOURCE_FILE=/workspace/source.cpp",
@@ -271,6 +275,29 @@ func (c *Compiler) selectEnvironment(req models.CompilationRequest) (models.Envi
 	}
 
 	return env, nil
+}
+
+// buildCompileCommand builds the compilation command based on the environment.
+func (c *Compiler) buildCompileCommand(env models.EnvironmentSpec) string {
+	// Build command based on language
+	// Note: stderr is NOT redirected to stdout so errors appear in stderr field
+	switch env.Language {
+	case models.LanguageCpp, models.LanguageC:
+		// C/C++ compilation with GCC or Clang
+		return fmt.Sprintf("g++ -std=%s ${SOURCE_FILE} -o /workspace/output", env.Standard)
+
+	case models.LanguageGo:
+		// Go compilation
+		return "go build -o /workspace/output ${SOURCE_FILE}"
+
+	case models.LanguageRust:
+		// Rust compilation
+		return "rustc ${SOURCE_FILE} -o /workspace/output"
+
+	default:
+		// Fallback to C++ (should not happen due to validation)
+		return fmt.Sprintf("g++ -std=%s ${SOURCE_FILE} -o /workspace/output", env.Standard)
+	}
 }
 
 // GetSupportedEnvironments returns a list of supported environments.
