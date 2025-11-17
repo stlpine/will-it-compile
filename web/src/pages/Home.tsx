@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { CodeEditor } from '@/components/CodeEditor'
 import { EnvironmentSelector } from '@/components/EnvironmentSelector'
 import { CompilerOutput } from '@/components/CompilerOutput'
-import { JobStatus } from '@/components/JobStatus'
+import { StatusBar } from '@/components/StatusBar'
 import { useCompilation } from '../hooks/useCompilation'
 import {
   Language,
@@ -50,6 +50,9 @@ export function Home() {
   // Rate limiter: 10 requests per minute
   const rateLimiterRef = useRef(new RateLimiter(10, 60000))
 
+  // Ref for auto-scrolling to results
+  const resultsRef = useRef<HTMLDivElement>(null)
+
   const { isCompiling, result, error, statusMessage, compile, reset } =
     useCompilation()
 
@@ -81,6 +84,19 @@ export function Home() {
     // Clear validation error when language changes
     setValidationError('')
   }, [language])
+
+  // Auto-scroll to results when compilation completes
+  useEffect(() => {
+    if (result && resultsRef.current) {
+      // Small delay to ensure DOM has updated
+      setTimeout(() => {
+        resultsRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        })
+      }, 100)
+    }
+  }, [result])
 
   const handleCompile = async () => {
     setValidationError('')
@@ -174,6 +190,13 @@ export function Home() {
         </div>
       </header>
 
+      {/* Status Bar - Sticky at top */}
+      <StatusBar
+        isCompiling={isCompiling}
+        result={result}
+        statusMessage={statusMessage}
+      />
+
       {/* Main Content */}
       <main className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
@@ -263,14 +286,6 @@ export function Home() {
             </CardContent>
           </Card>
 
-          {/* Job Status */}
-          {(isCompiling || statusMessage) && (
-            <JobStatus
-              isCompiling={isCompiling}
-              statusMessage={statusMessage}
-            />
-          )}
-
           {/* Validation Error */}
           {validationError && (
             <Alert variant="warning">
@@ -290,18 +305,20 @@ export function Home() {
 
           {/* Compilation Result */}
           {result && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Compilation Result</CardTitle>
-                <CardDescription>
-                  View the output of your compilation below
-                </CardDescription>
-              </CardHeader>
-              <Separator />
-              <CardContent className="pt-6">
-                <CompilerOutput result={result} />
-              </CardContent>
-            </Card>
+            <div ref={resultsRef}>
+              <Card className="border-2 border-primary/20 shadow-lg">
+                <CardHeader>
+                  <CardTitle>Compilation Result</CardTitle>
+                  <CardDescription>
+                    View the output of your compilation below
+                  </CardDescription>
+                </CardHeader>
+                <Separator />
+                <CardContent className="pt-6">
+                  <CompilerOutput result={result} />
+                </CardContent>
+              </Card>
+            </div>
           )}
         </div>
       </main>
