@@ -38,7 +38,7 @@ int main() { return 0; }`
 		Request: models.CompilationRequest{
 			Code:     encodedCode,
 			Language: models.LanguageCpp,
-			Compiler: models.CompilerGCC13,
+			Compiler: models.CompilerGCC9,
 			Standard: models.StandardCpp20,
 		},
 	}
@@ -77,7 +77,7 @@ func TestCompile_CompilationError(t *testing.T) {
 		Request: models.CompilationRequest{
 			Code:     encodedCode,
 			Language: models.LanguageCpp,
-			Compiler: models.CompilerGCC13,
+			Compiler: models.CompilerGCC9,
 		},
 	}
 
@@ -113,7 +113,7 @@ func TestCompile_Timeout(t *testing.T) {
 		Request: models.CompilationRequest{
 			Code:     encodedCode,
 			Language: models.LanguageCpp,
-			Compiler: models.CompilerGCC13,
+			Compiler: models.CompilerGCC9,
 		},
 	}
 
@@ -142,7 +142,7 @@ func TestCompile_RuntimeError(t *testing.T) {
 		Request: models.CompilationRequest{
 			Code:     encodedCode,
 			Language: models.LanguageCpp,
-			Compiler: models.CompilerGCC13,
+			Compiler: models.CompilerGCC9,
 		},
 	}
 
@@ -168,7 +168,7 @@ func TestValidateRequest(t *testing.T) {
 			request: models.CompilationRequest{
 				Code:     base64.StdEncoding.EncodeToString([]byte("int main() {}")),
 				Language: models.LanguageCpp,
-				Compiler: models.CompilerGCC13,
+				Compiler: models.CompilerGCC9,
 			},
 			expectError: false,
 		},
@@ -176,7 +176,7 @@ func TestValidateRequest(t *testing.T) {
 			name: "missing_code",
 			request: models.CompilationRequest{
 				Language: models.LanguageCpp,
-				Compiler: models.CompilerGCC13,
+				Compiler: models.CompilerGCC9,
 			},
 			expectError: true,
 			errorMsg:    "source code is required",
@@ -204,7 +204,7 @@ func TestValidateRequest(t *testing.T) {
 			request: models.CompilationRequest{
 				Code:     base64.StdEncoding.EncodeToString([]byte("int main() {}")),
 				Language: models.LanguageCPP,
-				Compiler: models.CompilerGCC13,
+				Compiler: models.CompilerGCC9,
 			},
 			expectError: false,
 		},
@@ -239,7 +239,7 @@ func TestSelectEnvironment(t *testing.T) {
 			name: "default_cpp_environment",
 			request: models.CompilationRequest{
 				Language: models.LanguageCpp,
-				Compiler: models.CompilerGCC13,
+				Compiler: models.CompilerGCC9,
 			},
 			expectError:      false,
 			expectedImageTag: "gcc:13",
@@ -249,7 +249,7 @@ func TestSelectEnvironment(t *testing.T) {
 			name: "cpp_with_custom_standard",
 			request: models.CompilationRequest{
 				Language: models.LanguageCpp,
-				Compiler: models.CompilerGCC13,
+				Compiler: models.CompilerGCC9,
 				Standard: models.StandardCpp17,
 			},
 			expectError:      false,
@@ -260,7 +260,7 @@ func TestSelectEnvironment(t *testing.T) {
 			name: "alternative_cpp_syntax",
 			request: models.CompilationRequest{
 				Language: models.LanguageCPP,
-				Compiler: models.CompilerGCC13,
+				Compiler: models.CompilerGCC9,
 			},
 			expectError:      false,
 			expectedImageTag: "gcc:13",
@@ -334,7 +334,7 @@ func TestCompile_InvalidBase64(t *testing.T) {
 		Request: models.CompilationRequest{
 			Code:     "not-valid-base64!@#$",
 			Language: models.LanguageCpp,
-			Compiler: models.CompilerGCC13,
+			Compiler: models.CompilerGCC9,
 		},
 	}
 
@@ -369,7 +369,7 @@ func TestCompile_VerifyRuntimeConfig(t *testing.T) {
 		Request: models.CompilationRequest{
 			Code:     encodedCode,
 			Language: models.LanguageCpp,
-			Compiler: models.CompilerGCC13,
+			Compiler: models.CompilerGCC9,
 			Standard: models.StandardCpp17,
 		},
 	}

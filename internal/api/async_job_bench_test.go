@@ -33,7 +33,7 @@ func BenchmarkAsyncJobProcessing_NoVirtualization(b *testing.B) {
 			Request: models.CompilationRequest{
 				Code:     "I2luY2x1ZGUgPGlvc3RyZWFtPg==",
 				Language: models.LanguageCpp,
-				Compiler: models.CompilerGCC13,
+				Compiler: models.CompilerGCC9,
 			},
 			Status:    models.StatusQueued,
 			CreatedAt: time.Now(),
@@ -64,7 +64,7 @@ func BenchmarkAsyncJobProcessing_WithVirtualization(b *testing.B) {
 				Request: models.CompilationRequest{
 					Code:     "I2luY2x1ZGUgPGlvc3RyZWFtPg==",
 					Language: models.LanguageCpp,
-					Compiler: models.CompilerGCC13,
+					Compiler: models.CompilerGCC9,
 				},
 				Status:    models.StatusQueued,
 				CreatedAt: time.Now(),
@@ -99,7 +99,7 @@ func BenchmarkConcurrentJobs(b *testing.B) {
 					Request: models.CompilationRequest{
 						Code:     "I2luY2x1ZGUgPGlvc3RyZWFtPg==",
 						Language: models.LanguageCpp,
-						Compiler: models.CompilerGCC13,
+						Compiler: models.CompilerGCC9,
 					},
 					Status:    models.StatusQueued,
 					CreatedAt: time.Now(),
@@ -227,7 +227,7 @@ func BenchmarkRealisticWorkload(b *testing.B) {
 					Request: models.CompilationRequest{
 						Code:     fmt.Sprintf("code-with-length-%d", j*100),
 						Language: models.LanguageCpp,
-						Compiler: models.CompilerGCC13,
+						Compiler: models.CompilerGCC9,
 					},
 					Status:    models.StatusQueued,
 					CreatedAt: time.Now(),

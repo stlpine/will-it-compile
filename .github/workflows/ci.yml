@@ -65,7 +65,7 @@ jobs:
           docker pull gcc:9
 
       - name: Run integration tests
-        run: make test-integration
+        run: MINIMAL_IMAGE_VALIDATION=true go test -v -race ./tests/integration/...
 
   build:
     name: Build

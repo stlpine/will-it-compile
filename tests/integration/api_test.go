@@ -92,8 +92,8 @@ int main() {
 	request := models.CompilationRequest{
 		Code:     encodedCode,
 		Language: models.LanguageCpp,
-		Compiler: models.CompilerGCC13,
-		Standard: models.StandardCpp20,
+		Compiler: models.CompilerGCC9,
+		Standard: models.StandardCpp11,
 	}
 
 	body, err := json.Marshal(request)
@@ -157,8 +157,8 @@ int main() {
 	request := models.CompilationRequest{
 		Code:     encodedCode,
 		Language: models.LanguageCpp,
-		Compiler: models.CompilerGCC13,
-		Standard: models.StandardCpp20,
+		Compiler: models.CompilerGCC9,
+		Standard: models.StandardCpp11,
 	}
 
 	body, err := json.Marshal(request)
