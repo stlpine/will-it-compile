@@ -379,8 +379,10 @@ func TestCompile_VerifyRuntimeConfig(t *testing.T) {
 	assert.True(t, result.Success)
 	assert.Equal(t, "gcc:13", capturedConfig.ImageTag)
 	assert.Equal(t, sourceCode, capturedConfig.SourceCode)
+	assert.Equal(t, "source.cpp", capturedConfig.SourceFilename)
 	assert.Equal(t, "/workspace", capturedConfig.WorkDir)
-	assert.Contains(t, capturedConfig.Env, "CPP_STANDARD=c++17")
+	assert.Contains(t, capturedConfig.Env, "STANDARD=c++17")
+	assert.Contains(t, capturedConfig.Env, "SOURCE_FILE=/workspace/source.cpp")
 	assert.Equal(t, job.ID, capturedConfig.JobID)
 	assert.Equal(t, 30*time.Second, capturedConfig.Timeout)
 }
