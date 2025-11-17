@@ -1,4 +1,4 @@
-.PHONY: help build build-api build-cli build-tui run run-tui test clean docker-build docker-clean deps install
+.PHONY: help build build-api build-cli build-tui run run-tui test clean docker-build docker-clean docker-up docker-down docker-logs docker-restart docker-ps deps install fmt lint lint-fix lint-verbose test-unit test-integration test-coverage docker-test all
 
 # Variables
 API_BINARY=will-it-compile-api
@@ -7,6 +7,8 @@ TUI_BINARY=will-it-compile-tui
 GO=go
 GOFLAGS=-v
 DOCKER=docker
+DOCKER_COMPOSE=docker compose
+GOLANGCI_LINT=golangci-lint
 
 # Version information (can be overridden via build flags)
 VERSION?=dev
@@ -67,7 +69,7 @@ clean: ## Clean build artifacts
 
 docker-build: ## Build Docker image for C++ compilation
 	@echo "Building C++ compiler Docker image..."
-	cd images/cpp && chmod +x build.sh && ./build.sh
+	cd images/cpp && ./build.sh
 
 docker-clean: ## Remove Docker images
 	$(DOCKER) rmi will-it-compile/cpp-gcc:13-alpine || true
@@ -80,23 +82,34 @@ docker-test: docker-build ## Test Docker image
 		will-it-compile/cpp-gcc:13-alpine
 	@rm /tmp/test.cpp
 
+docker-up: docker-build ## Start docker compose services (builds compiler image first)
+	$(DOCKER_COMPOSE) up -d
+
+docker-down: ## Stop docker compose services and remove volumes
+	$(DOCKER_COMPOSE) down -v
+
+docker-logs: ## View docker compose logs
+	$(DOCKER_COMPOSE) logs -f
+
+docker-restart: ## Restart docker compose services
+	$(DOCKER_COMPOSE) restart
+
+docker-ps: ## Show running docker compose containers
+	$(DOCKER_COMPOSE) ps
+
 fmt: ## Format Go code
 	$(GO) fmt ./...
 
 lint: ## Run golangci-lint
-	@which golangci-lint > /dev/null || (echo "golangci-lint not installed. Install it from https://golangci-lint.run/usage/install/" && exit 1)
-	golangci-lint run ./...
+	@which $(GOLANGCI_LINT) > /dev/null || (echo "golangci-lint not installed. Install it from https://golangci-lint.run/usage/install/" && exit 1)
+	$(GOLANGCI_LINT) run ./...
 
 lint-fix: ## Run golangci-lint with auto-fix
-	@which golangci-lint > /dev/null || (echo "golangci-lint not installed. Install it from https://golangci-lint.run/usage/install/" && exit 1)
-	golangci-lint run --fix ./...
+	@which $(GOLANGCI_LINT) > /dev/null || (echo "golangci-lint not installed. Install it from https://golangci-lint.run/usage/install/" && exit 1)
+	$(GOLANGCI_LINT) run --fix ./...
 
 lint-verbose: ## Run golangci-lint with verbose output
-	@which golangci-lint > /dev/null || (echo "golangci-lint not installed. Install it from https://golangci-lint.run/usage/install/" && exit 1)
-	golangci-lint run -v ./...
-
-dev: docker-build ## Set up development environment
-	@echo "Development environment ready!"
-	@echo "Run 'make run' to start the server"
+	@which $(GOLANGCI_LINT) > /dev/null || (echo "golangci-lint not installed. Install it from https://golangci-lint.run/usage/install/" && exit 1)
+	$(GOLANGCI_LINT) run -v ./...
 
 all: clean deps docker-build build test ## Run all build steps
