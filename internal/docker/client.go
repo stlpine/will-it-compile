@@ -65,6 +65,7 @@ type CompilationConfig struct {
 	SourceCode      string
 	WorkDir         string
 	Env             []string
+	CompileCommand  string // Shell command to run compilation (e.g., "g++ -std=c++17 source.cpp -o output")
 	SecurityOptPath string // Path to seccomp profile
 }
 
@@ -156,11 +157,18 @@ func (c *Client) createSecureContainer(ctx context.Context, config CompilationCo
 	}
 
 	// Container configuration
+	// Use inline shell command for official images (they don't have compile.sh)
+	// Run as root (official images don't have compiler user)
+	// Use the compile command from config, or fallback to default C++ command
+	compileCmd := config.CompileCommand
+	if compileCmd == "" {
+		compileCmd = "g++ -std=${CPP_STANDARD:-c++17} ${SOURCE_FILE} -o /workspace/output"
+	}
+
 	containerConfig := &container.Config{
 		Image:           config.ImageTag,
-		Cmd:             []string{"/usr/bin/compile.sh"},
+		Cmd:             []string{"/bin/sh", "-c", compileCmd},
 		WorkingDir:      "/workspace",
-		User:            "compiler",
 		NetworkDisabled: true,
 		Env:             config.Env,
 	}

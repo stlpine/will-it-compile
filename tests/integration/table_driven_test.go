@@ -41,8 +41,8 @@ int main() {
     return 0;
 }`,
 			language:       models.LanguageCpp,
-			compiler:       models.CompilerGCC13,
-			standard:       models.StandardCpp20,
+			compiler:       models.CompilerGCC9,
+			standard:       models.StandardCpp11,
 			expectCompiled: true,
 			expectSuccess:  true,
 			expectedExit:   0,
@@ -56,8 +56,8 @@ int main() {
     return 0;
 }`,
 			language:       models.LanguageCpp,
-			compiler:       models.CompilerGCC13,
-			standard:       models.StandardCpp20,
+			compiler:       models.CompilerGCC9,
+			standard:       models.StandardCpp11,
 			expectCompiled: false,
 			expectSuccess:  true, // Success means the job completed, not that code compiled
 			expectedExit:   1,
@@ -70,8 +70,8 @@ int main() {
     std::cout << "Missing return" << std::endl;
 }`,
 			language:       models.LanguageCpp,
-			compiler:       models.CompilerGCC13,
-			standard:       models.StandardCpp20,
+			compiler:       models.CompilerGCC9,
+			standard:       models.StandardCpp11,
 			expectCompiled: true, // GCC allows missing return in main()
 			expectSuccess:  true,
 			expectedExit:   0,
@@ -85,8 +85,8 @@ int main() {
     return 0;
 }`,
 			language:       models.LanguageCpp,
-			compiler:       models.CompilerGCC13,
-			standard:       models.StandardCpp20,
+			compiler:       models.CompilerGCC9,
+			standard:       models.StandardCpp11,
 			expectCompiled: false,
 			expectSuccess:  true,
 			expectedExit:   1,
@@ -100,8 +100,8 @@ int main() {
     return 0;
 }`,
 			language:       models.LanguageCpp,
-			compiler:       models.CompilerGCC13,
-			standard:       models.StandardCpp20,
+			compiler:       models.CompilerGCC9,
+			standard:       models.StandardCpp11,
 			expectCompiled: false,
 			expectSuccess:  true,
 			expectedExit:   1,
@@ -121,8 +121,8 @@ int main() {
     return 0;
 }`,
 			language:       models.LanguageCpp,
-			compiler:       models.CompilerGCC13,
-			standard:       models.StandardCpp20,
+			compiler:       models.CompilerGCC9,
+			standard:       models.StandardCpp11,
 			expectCompiled: true,
 			expectSuccess:  true,
 			expectedExit:   0,
@@ -141,8 +141,8 @@ int main() {
     return 0;
 }`,
 			language:       models.LanguageCpp,
-			compiler:       models.CompilerGCC13,
-			standard:       models.StandardCpp20,
+			compiler:       models.CompilerGCC9,
+			standard:       models.StandardCpp11,
 			expectCompiled: true,
 			expectSuccess:  true,
 			expectedExit:   0,
@@ -233,8 +233,8 @@ func TestRequestValidation(t *testing.T) {
 			name: "missing_code",
 			request: models.CompilationRequest{
 				Language: models.LanguageCpp,
-				Compiler: models.CompilerGCC13,
-				Standard: models.StandardCpp20,
+				Compiler: models.CompilerGCC9,
+				Standard: models.StandardCpp11,
 			},
 			errorContains: "source code is required",
 		},
@@ -242,27 +242,18 @@ func TestRequestValidation(t *testing.T) {
 			name: "missing_language",
 			request: models.CompilationRequest{
 				Code:     base64.StdEncoding.EncodeToString([]byte("int main() { return 0; }")),
-				Compiler: models.CompilerGCC13,
-				Standard: models.StandardCpp20,
+				Compiler: models.CompilerGCC9,
+				Standard: models.StandardCpp11,
 			},
 			errorContains: "invalid language",
-		},
-		{
-			name: "unsupported_language",
-			request: models.CompilationRequest{
-				Code:     base64.StdEncoding.EncodeToString([]byte("package main")),
-				Language: models.LanguageGo,
-				Compiler: models.CompilerGo,
-			},
-			errorContains: "unsupported",
 		},
 		{
 			name: "code_too_large",
 			request: models.CompilationRequest{
 				Code:     base64.StdEncoding.EncodeToString(make([]byte, 2*1024*1024)), // 2MB
 				Language: models.LanguageCpp,
-				Compiler: models.CompilerGCC13,
-				Standard: models.StandardCpp20,
+				Compiler: models.CompilerGCC9,
+				Standard: models.StandardCpp11,
 			},
 			errorContains: "too large",
 		},
@@ -328,7 +319,7 @@ func TestEnvironmentSpecs(t *testing.T) {
 			name:             "cpp_environment",
 			expectedLanguage: "cpp",
 			expectedCompiler: "gcc",
-			minVersion:       "13",
+			minVersion:       "9",
 		},
 		// Future test cases for other languages can be added here
 	}

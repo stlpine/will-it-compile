@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -86,7 +87,7 @@ func getHardcodedEnvironments() map[string]models.EnvironmentSpec {
 			Standard:     models.StandardCpp20,
 			Architecture: models.ArchX86_64,
 			OS:           models.OSLinux,
-			ImageTag:     "will-it-compile/cpp-gcc:13-alpine",
+			ImageTag:     "gcc:13",
 		},
 	}
 }
@@ -98,6 +99,22 @@ func (c *Compiler) Close() error {
 
 // verifyImages checks that all required images exist.
 func (c *Compiler) verifyImages(ctx context.Context) error {
+	// In integration tests (CI), we only pull gcc:9 to speed up the pipeline.
+	// MINIMAL_IMAGE_VALIDATION=true checks only for gcc:9 instead of all images.
+	// This must match the image pulled in .github/workflows/pr-ci.yml
+	if os.Getenv("MINIMAL_IMAGE_VALIDATION") == "true" {
+		minimalImage := "gcc:9"
+		exists, err := c.runtime.ImageExists(ctx, minimalImage)
+		if err != nil {
+			return fmt.Errorf("failed to check image %s: %w", minimalImage, err)
+		}
+		if !exists {
+			return fmt.Errorf("%w: %s\n\nPlease pull official images using:\n  make docker-pull\n  or: docker pull %s",
+				ErrMissingRequiredImages, minimalImage, minimalImage)
+		}
+		return nil
+	}
+
 	missingImages := []string{}
 
 	// Check each environment's image
@@ -118,7 +135,7 @@ func (c *Compiler) verifyImages(ctx context.Context) error {
 			imageListSb106.WriteString("\n  - " + img)
 		}
 		imageList += imageListSb106.String()
-		return fmt.Errorf("%w:%s\n\nPlease build images using:\n  make docker-build\n  or: cd images/cpp && ./build.sh",
+		return fmt.Errorf("%w:%s\n\nPlease pull official images using:\n  make docker-pull\n  or: docker pull gcc:13",
 			ErrMissingRequiredImages, imageList)
 	}
 
@@ -164,12 +181,16 @@ func (c *Compiler) Compile(ctx context.Context, job models.CompilationJob) model
 		}
 	}
 
+	// Build compile command based on language
+	compileCmd := c.buildCompileCommand(envSpec)
+
 	// Prepare runtime configuration
 	config := runtime.CompilationConfig{
-		JobID:      job.ID,
-		ImageTag:   envSpec.ImageTag,
-		SourceCode: string(sourceCode),
-		WorkDir:    "/workspace",
+		JobID:          job.ID,
+		ImageTag:       envSpec.ImageTag,
+		SourceCode:     string(sourceCode),
+		CompileCommand: compileCmd,
+		WorkDir:        "/workspace",
 		Env: []string{
 			fmt.Sprintf("CPP_STANDARD=%s", envSpec.Standard),
 			"SOURCE_FILE=/workspace/source.cpp",
@@ -254,6 +275,29 @@ func (c *Compiler) selectEnvironment(req models.CompilationRequest) (models.Envi
 	}
 
 	return env, nil
+}
+
+// buildCompileCommand builds the compilation command based on the environment.
+func (c *Compiler) buildCompileCommand(env models.EnvironmentSpec) string {
+	// Build command based on language
+	// Note: stderr is NOT redirected to stdout so errors appear in stderr field
+	switch env.Language {
+	case models.LanguageCpp, models.LanguageC:
+		// C/C++ compilation with GCC or Clang
+		return fmt.Sprintf("g++ -std=%s ${SOURCE_FILE} -o /workspace/output", env.Standard)
+
+	case models.LanguageGo:
+		// Go compilation
+		return "go build -o /workspace/output ${SOURCE_FILE}"
+
+	case models.LanguageRust:
+		// Rust compilation
+		return "rustc ${SOURCE_FILE} -o /workspace/output"
+
+	default:
+		// Fallback to C++ (should not happen due to validation)
+		return fmt.Sprintf("g++ -std=%s ${SOURCE_FILE} -o /workspace/output", env.Standard)
+	}
 }
 
 // GetSupportedEnvironments returns a list of supported environments.

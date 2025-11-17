@@ -109,7 +109,7 @@ func TestAsyncJobProcessing(t *testing.T) {
 					Request: models.CompilationRequest{
 						Code:     "I2luY2x1ZGUgPGlvc3RyZWFtPg==",
 						Language: models.LanguageCpp,
-						Compiler: models.CompilerGCC13,
+						Compiler: models.CompilerGCC9,
 					},
 					Status:    models.StatusQueued,
 					CreatedAt: time.Now(),
@@ -168,7 +168,7 @@ func TestConcurrentJobs(t *testing.T) {
 				Request: models.CompilationRequest{
 					Code:     "I2luY2x1ZGUgPGlvc3RyZWFtPg==",
 					Language: models.LanguageCpp,
-					Compiler: models.CompilerGCC13,
+					Compiler: models.CompilerGCC9,
 				},
 				Status:    models.StatusQueued,
 				CreatedAt: time.Now(),
@@ -215,7 +215,7 @@ func TestJobLifecycle(t *testing.T) {
 			Request: models.CompilationRequest{
 				Code:     "I2luY2x1ZGUgPGlvc3RyZWFtPg==",
 				Language: models.LanguageCpp,
-				Compiler: models.CompilerGCC13,
+				Compiler: models.CompilerGCC9,
 			},
 			Status:    models.StatusQueued,
 			CreatedAt: time.Now(),
@@ -266,7 +266,7 @@ func TestRapidJobSubmission(t *testing.T) {
 				Request: models.CompilationRequest{
 					Code:     "I2luY2x1ZGUgPGlvc3RyZWFtPg==",
 					Language: models.LanguageCpp,
-					Compiler: models.CompilerGCC13,
+					Compiler: models.CompilerGCC9,
 				},
 				Status:    models.StatusQueued,
 				CreatedAt: time.Now(),
@@ -316,7 +316,7 @@ func TestMixedSuccessFailure(t *testing.T) {
 				Request: models.CompilationRequest{
 					Code:     "I2luY2x1ZGUgPGlvc3RyZWFtPg==",
 					Language: models.LanguageCpp,
-					Compiler: models.CompilerGCC13,
+					Compiler: models.CompilerGCC9,
 				},
 				Status:    models.StatusQueued,
 				CreatedAt: time.Now(),
@@ -350,7 +350,7 @@ func TestJobTimestamps(t *testing.T) {
 			Request: models.CompilationRequest{
 				Code:     "I2luY2x1ZGUgPGlvc3RyZWFtPg==",
 				Language: models.LanguageCpp,
-				Compiler: models.CompilerGCC13,
+				Compiler: models.CompilerGCC9,
 			},
 			Status:    models.StatusQueued,
 			CreatedAt: startTime,

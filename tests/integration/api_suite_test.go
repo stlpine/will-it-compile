@@ -88,8 +88,8 @@ func (s *APISuite) createCppRequest(sourceCode string) models.CompilationRequest
 	return models.CompilationRequest{
 		Code:     encodedCode,
 		Language: models.LanguageCpp,
-		Compiler: models.CompilerGCC13,
-		Standard: models.StandardCpp20,
+		Compiler: models.CompilerGCC9,
+		Standard: models.StandardCpp11,
 	}
 }
 

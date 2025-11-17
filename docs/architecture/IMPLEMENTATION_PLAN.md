@@ -238,11 +238,11 @@ defer cancel()
 
 ### Docker Image Structure
 
-**Base Image Naming:**
+**Official Docker Hub Images:**
 ```
-will-it-compile/cpp-gcc:13-alpine
-will-it-compile/go:1.21-alpine
-will-it-compile/rust:1.75-alpine
+gcc:13                  # C/C++ (Debian-based)
+golang:1.22-alpine      # Go (Alpine-based)
+rust:1.75-alpine        # Rust (Alpine-based)
 ```
 
 **Dockerfile Example (C++):**

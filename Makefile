@@ -53,7 +53,7 @@ test-unit: ## Run unit tests only (no Docker required)
 	$(GO) test -v -short ./...
 
 test-integration: docker-build ## Run integration tests (requires Docker)
-	$(GO) test -v ./tests/integration/
+	$(GO) test -v -race ./tests/integration/
 
 test: docker-build ## Run all tests (builds Docker images first)
 	$(GO) test -v ./...
@@ -67,22 +67,41 @@ clean: ## Clean build artifacts
 	rm -f coverage.out coverage.html
 	$(GO) clean
 
-docker-build: ## Build Docker image for C++ compilation
-	@echo "Building C++ compiler Docker image..."
-	cd images/cpp && ./build.sh
+docker-pull: ## Pull official compiler images for local testing
+	@echo "Pulling official compiler images..."
+	@echo "→ GCC (C/C++ - Debian-based)..."
+	@$(DOCKER) pull gcc:9
+	@$(DOCKER) pull gcc:11
+	@$(DOCKER) pull gcc:13
+	@echo "→ Go (Alpine-based)..."
+	@$(DOCKER) pull golang:1.22-alpine
+	@$(DOCKER) pull golang:1.23-alpine
+	@echo "→ Rust (Alpine-based)..."
+	@$(DOCKER) pull rust:1.75-alpine
+	@$(DOCKER) pull rust:1.80-alpine
+	@echo "✓ All compiler images pulled"
+
+docker-build: docker-pull ## Pull compiler images (alias for backward compatibility)
 
 docker-clean: ## Remove Docker images
-	$(DOCKER) rmi will-it-compile/cpp-gcc:13-alpine || true
+	@echo "Removing official compiler images..."
+	@$(DOCKER) rmi gcc:9 gcc:11 gcc:13 || true
+	@$(DOCKER) rmi golang:1.22-alpine golang:1.23-alpine || true
+	@$(DOCKER) rmi rust:1.75-alpine rust:1.80-alpine || true
+	@echo "✓ Cleanup complete"
 
-docker-test: docker-build ## Test Docker image
-	@echo "Testing Docker image..."
-	@echo '#include <iostream>\nint main() { std::cout << "Hello, World!" << std::endl; return 0; }' > /tmp/test.cpp
+docker-test: docker-pull ## Test Docker image with official GCC
+	@echo "Testing official GCC Docker image..."
+	@echo '#include <iostream>\nint main() { std::cout << "Hello from official GCC!" << std::endl; return 0; }' > /tmp/test.cpp
 	@$(DOCKER) run --rm \
 		-v /tmp/test.cpp:/workspace/source.cpp:ro \
-		will-it-compile/cpp-gcc:13-alpine
+		-w /workspace \
+		gcc:13 \
+		sh -c 'g++ -std=c++17 source.cpp -o output && ./output'
 	@rm /tmp/test.cpp
+	@echo "✓ Docker test passed"
 
-docker-up: docker-build ## Start docker compose services (builds compiler image first)
+docker-up: ## Start docker compose services
 	$(DOCKER_COMPOSE) up -d
 
 docker-down: ## Stop docker compose services and remove volumes

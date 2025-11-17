@@ -6,35 +6,31 @@ bin/
 *.so
 *.dylib
 
-# Go build artifacts
+# Test binary, built with `go test -c`
 *.test
-*.out
-go.work
 
-# Coverage reports
-coverage.out
+# Output of the go coverage tool
+*.out
 coverage.html
 
-# IDE/Editor files
+# Go workspace file
+go.work
+
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-.DS_Store
 
-# Environment files
-.env
-.env.local
+# OS
+.DS_Store
+Thumbs.db
 
 # Temporary files
 tmp/
 temp/
-*.tmp
 
-# Logs
-*.log
-
-# Docker volumes (if using local development)
-data/
-volumes/
+# Environment files
+.env
+.env.local

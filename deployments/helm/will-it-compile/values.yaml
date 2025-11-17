@@ -3,14 +3,36 @@
 replicaCount: 2
 
 image:
-  repository: will-it-compile/api
+  repository: stlpine/will-it-compile-api
   pullPolicy: IfNotPresent
   tag: "latest"
 
+# Compiler images are now official Docker images (no custom builds needed)
+# These are referenced in environments.yaml and pulled automatically by Kubernetes
 compilerImages:
-  cpp:
-    repository: will-it-compile/cpp-gcc
-    tag: "13-alpine"
+  # C/C++ - Official GCC images
+  gcc:
+    repository: gcc
+    tags:
+      - "9-alpine"
+      - "11-alpine"
+      - "13-alpine"
+    pullPolicy: IfNotPresent
+
+  # Go - Official Golang images
+  go:
+    repository: golang
+    tags:
+      - "1.22-alpine"
+      - "1.23-alpine"
+    pullPolicy: IfNotPresent
+
+  # Rust - Official Rust images
+  rust:
+    repository: rust
+    tags:
+      - "1.75-alpine"
+      - "1.80-alpine"
     pullPolicy: IfNotPresent
 
 imagePullSecrets: []

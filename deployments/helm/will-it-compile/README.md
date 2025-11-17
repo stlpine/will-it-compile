@@ -153,14 +153,15 @@ helm install will-it-compile ./deployments/helm/will-it-compile \
 
 ## Preparing Compiler Images
 
-Before deploying, ensure compiler images are available:
+Before deploying, note that compiler images are pulled from official Docker Hub repositories:
 
 ```bash
-# Build locally and push to registry
-docker build -t myregistry.io/will-it-compile/cpp-gcc:13-alpine ./images/cpp
-docker push myregistry.io/will-it-compile/cpp-gcc:13-alpine
+# Official compiler images (no build required):
+# - gcc:13 (C/C++)
+# - golang:1.22-alpine (Go)
+# - rust:1.75-alpine (Rust)
 
-# Or use image pull secrets
+# If using private registry for API server, use image pull secrets
 kubectl create secret docker-registry regcred \
   --docker-server=myregistry.io \
   --docker-username=user \

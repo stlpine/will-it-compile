@@ -263,8 +263,8 @@ web/
 # Build API server
 make build
 
-# Build Docker images
-make docker-build
+# Pull official compiler images (for local testing)
+make docker-pull
 
 # Build everything
 make all
@@ -307,13 +307,15 @@ docker compose up --build
 docker build -f Dockerfile.dev -t will-it-compile-api:dev .    # Development
 docker build -f Dockerfile -t will-it-compile-api:latest .      # Production
 
-# Build C++ compiler image
-cd images/cpp && ./build.sh
+# Pull official compiler images
+make docker-pull
 
-# Test Docker image manually
+# Test official GCC image
 docker run --rm \
   -v /path/to/source.cpp:/workspace/source.cpp:ro \
-  will-it-compile/cpp-gcc:13-alpine
+  -w /workspace \
+  gcc:13 \
+  sh -c 'g++ -std=c++17 source.cpp -o output && ./output'
 
 # Clean up Docker images
 make docker-clean
@@ -471,9 +473,8 @@ This checks:
 ### "Missing required Docker images"
 **New in startup**: The server now verifies all required Docker images exist at startup and will refuse to start if any are missing.
 
-To fix:
-- Build all images: `make docker-build`
-- Or manually: `cd images/cpp && ./build.sh`
+For local testing:
+- Pull images: `make docker-pull`
 - Verify: `./scripts/verify-setup.sh`
 
 **Why not build on-demand?**
@@ -498,7 +499,7 @@ All images must be pre-built and verified during deployment.
 ### Tests failing
 - Ensure Docker is running: `docker ps`
 - Build images: `make docker-build`
-- Check Go version: `go version` (requires 1.24+)
+- Check Go version: `go version` (requires 1.25+)
 
 ## Performance Considerations
 
@@ -547,9 +548,9 @@ All images must be pre-built and verified during deployment.
 
 ### Debugging Compilation Issues
 - `internal/compiler/compiler.go` - Compilation logic
-- `images/cpp/compile.sh` - Compilation script
-- `internal/docker/client.go` - Container execution
-- `internal/runtime/` - Runtime execution
+- `configs/environments.yaml` - Compiler configurations
+- `internal/runtime/docker/` - Docker runtime execution
+- `internal/runtime/kubernetes/` - Kubernetes runtime execution
 
 ### Adding API Features
 - `internal/api/handlers.go` - HTTP handlers
@@ -1075,11 +1076,14 @@ security: update seccomp profile
 - `testing/synctest` - Testing concurrent code with virtualized time
 
 **Docker Images**:
-- `will-it-compile/cpp-gcc:13-alpine` - C++ GCC 13
+- Official images from Docker Hub:
+  - `gcc:9`, `gcc:11`, `gcc:13` - C/C++ compilers (Debian-based)
+  - `golang:1.22-alpine`, `golang:1.23-alpine` - Go compilers (Alpine-based)
+  - `rust:1.75-alpine`, `rust:1.80-alpine` - Rust compilers (Alpine-based)
 
-**Versioning Strategy** (for future):
+**Versioning Strategy**:
 - API: v1, v2, etc. (URL versioning)
-- Images: SemVer tags (e.g., `cpp-gcc:13.2.0-alpine`)
+- Compiler images: Use official tags from Docker Hub
 
 ## Contact & Resources
 

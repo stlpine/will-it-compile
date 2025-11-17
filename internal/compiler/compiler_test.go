@@ -242,7 +242,7 @@ func TestSelectEnvironment(t *testing.T) {
 				Compiler: models.CompilerGCC13,
 			},
 			expectError:      false,
-			expectedImageTag: "will-it-compile/cpp-gcc:13-alpine",
+			expectedImageTag: "gcc:13",
 			expectedStandard: string(models.StandardCpp20),
 		},
 		{
@@ -253,7 +253,7 @@ func TestSelectEnvironment(t *testing.T) {
 				Standard: models.StandardCpp17,
 			},
 			expectError:      false,
-			expectedImageTag: "will-it-compile/cpp-gcc:13-alpine",
+			expectedImageTag: "gcc:13",
 			expectedStandard: string(models.StandardCpp17),
 		},
 		{
@@ -263,7 +263,7 @@ func TestSelectEnvironment(t *testing.T) {
 				Compiler: models.CompilerGCC13,
 			},
 			expectError:      false,
-			expectedImageTag: "will-it-compile/cpp-gcc:13-alpine",
+			expectedImageTag: "gcc:13",
 		},
 		{
 			name: "unsupported_compiler",
@@ -279,7 +279,7 @@ func TestSelectEnvironment(t *testing.T) {
 				Language: models.LanguageCpp,
 			},
 			expectError:      false,
-			expectedImageTag: "will-it-compile/cpp-gcc:13-alpine",
+			expectedImageTag: "gcc:13",
 		},
 	}
 
@@ -377,7 +377,7 @@ func TestCompile_VerifyRuntimeConfig(t *testing.T) {
 	result := compiler.Compile(context.Background(), job)
 
 	assert.True(t, result.Success)
-	assert.Equal(t, "will-it-compile/cpp-gcc:13-alpine", capturedConfig.ImageTag)
+	assert.Equal(t, "gcc:13", capturedConfig.ImageTag)
 	assert.Equal(t, sourceCode, capturedConfig.SourceCode)
 	assert.Equal(t, "/workspace", capturedConfig.WorkDir)
 	assert.Contains(t, capturedConfig.Env, "CPP_STANDARD=c++17")

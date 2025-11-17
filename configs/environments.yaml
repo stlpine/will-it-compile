@@ -1,20 +1,97 @@
 # Supported compilation environments
+# Using official Docker images for better maintainability and multi-arch support
 environments:
+  # C++ with multiple GCC versions (official Debian-based images)
   - language: cpp
     compilers:
       - name: gcc
+        version: "9"
+        image: gcc:9
+        standards: [c++11, c++14, c++17, c++20]
+        architectures: [x86_64, arm64]
+      - name: gcc
+        version: "10"
+        image: gcc:10
+        standards: [c++11, c++14, c++17, c++20]
+        architectures: [x86_64, arm64]
+      - name: gcc
+        version: "11"
+        image: gcc:11
+        standards: [c++11, c++14, c++17, c++20, c++23]
+        architectures: [x86_64, arm64]
+      - name: gcc
+        version: "12"
+        image: gcc:12
+        standards: [c++11, c++14, c++17, c++20, c++23]
+        architectures: [x86_64, arm64]
+      - name: gcc
         version: "13"
-        image: will-it-compile/cpp-gcc:13-alpine
-        standards:
-          - c++11
-          - c++14
-          - c++17
-          - c++20
-          - c++23
-        architectures:
-          - x86_64
-        oses:
-          - linux
+        image: gcc:13
+        standards: [c++11, c++14, c++17, c++20, c++23]
+        architectures: [x86_64, arm64]
+      - name: clang
+        version: "17"
+        image: silkeh/clang:17-alpine
+        standards: [c++11, c++14, c++17, c++20, c++23]
+        architectures: [x86_64, arm64]
+
+  # C with multiple GCC versions (official Debian-based images)
+  - language: c
+    compilers:
+      - name: gcc
+        version: "9"
+        image: gcc:9
+        standards: [c89, c99, c11, c17]
+        architectures: [x86_64, arm64]
+      - name: gcc
+        version: "11"
+        image: gcc:11
+        standards: [c89, c99, c11, c17]
+        architectures: [x86_64, arm64]
+      - name: gcc
+        version: "13"
+        image: gcc:13
+        standards: [c89, c99, c11, c17, c23]
+        architectures: [x86_64, arm64]
+
+  # Go - version-only (no standard flags)
+  - language: go
+    compilers:
+      - name: go
+        version: "1.20"
+        image: golang:1.20-alpine
+        architectures: [x86_64, arm64]
+      - name: go
+        version: "1.21"
+        image: golang:1.21-alpine
+        architectures: [x86_64, arm64]
+      - name: go
+        version: "1.22"
+        image: golang:1.22-alpine
+        architectures: [x86_64, arm64]
+      - name: go
+        version: "1.23"
+        image: golang:1.23-alpine
+        architectures: [x86_64, arm64]
+
+  # Rust - both version AND edition matter
+  - language: rust
+    compilers:
+      - name: rustc
+        version: "1.70"
+        image: rust:1.70-alpine
+        editions: ["2015", "2018", "2021"]
+        architectures: [x86_64, arm64]
+      - name: rustc
+        version: "1.75"
+        image: rust:1.75-alpine
+        editions: ["2015", "2018", "2021"]
+        architectures: [x86_64, arm64]
+      - name: rustc
+        version: "1.80"
+        image: rust:1.80-alpine
+        editions: ["2015", "2018", "2021", "2024"]
+        architectures: [x86_64, arm64]
 
 # Resource limits
 limits:

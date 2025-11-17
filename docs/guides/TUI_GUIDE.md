@@ -15,7 +15,7 @@ Built with [Bubbletea](https://github.com/charmbracelet/bubbletea), the TUI offe
 
 - API server running (typically at `http://localhost:8080`)
 - Terminal with support for ANSI colors and escape codes
-- Go 1.24+ (for building)
+- Go 1.25+ (for building)
 
 ## Quick Start
 

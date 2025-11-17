@@ -33,6 +33,7 @@ func (l Language) Normalize() Language {
 type Compiler string
 
 const (
+	CompilerGCC9    Compiler = "gcc-9"
 	CompilerGCC13   Compiler = "gcc-13"
 	CompilerClang15 Compiler = "clang-15"
 	CompilerGo      Compiler = "go"
@@ -42,7 +43,7 @@ const (
 // Valid returns true if the compiler is valid.
 func (c Compiler) Valid() bool {
 	switch c {
-	case CompilerGCC13, CompilerClang15, CompilerGo, CompilerRustc:
+	case CompilerGCC9, CompilerGCC13, CompilerClang15, CompilerGo, CompilerRustc:
 		return true
 	default:
 		return false

@@ -10,19 +10,41 @@ This guide covers deploying will-it-compile to both local development and produc
 - `kubectl` configured to access your cluster
 - Compiler Docker images built and available
 
-### Build Compiler Images
+### Compiler Images
 
-Before deploying, you must build and make available the compiler images:
+**Option 1: Use Official Docker Hub Images** (Recommended)
+
+The project uses official Docker images from Docker Hub:
 
 ```bash
-# Build C++ compiler image
-cd images/cpp
-./build.sh
+# API server image (published automatically)
+stlpine/will-it-compile-api:latest
 
-# Tag for your registry (production)
-docker tag will-it-compile/cpp-gcc:13-alpine your-registry.io/will-it-compile/cpp-gcc:13-alpine
-docker push your-registry.io/will-it-compile/cpp-gcc:13-alpine
+# Compiler images (official Docker Hub images)
+gcc:13                    # C/C++ (Debian-based)
+golang:1.22-alpine        # Go (Alpine-based)
+rust:1.75-alpine          # Rust (Alpine-based)
 ```
+
+No additional setup needed - Helm charts use these images by default.
+
+**Option 2: Build and Push Custom API Server Image**
+
+If you need to build the API server from source:
+
+```bash
+# Build API server image
+docker build -f Dockerfile -t your-registry.io/will-it-compile/api:latest .
+
+# Push to your registry
+docker push your-registry.io/will-it-compile/api:latest
+
+# Update Helm values to use your registry
+helm install will-it-compile ./deployments/helm/will-it-compile \
+  --set image.repository=your-registry.io/will-it-compile/api
+```
+
+**Note**: Compiler images are pulled directly from Docker Hub. No custom builds required.
 
 ## Local Development Deployment
 
@@ -32,13 +54,15 @@ docker push your-registry.io/will-it-compile/cpp-gcc:13-alpine
 # Create a kind cluster
 kind create cluster --name will-it-compile
 
-# Load images into kind cluster
-kind load docker-image will-it-compile/api:latest --name will-it-compile
-kind load docker-image will-it-compile/cpp-gcc:13-alpine --name will-it-compile
-
-# Install with dev values
+# Option A: Use public Docker Hub images (automatic pull)
 helm install will-it-compile ./deployments/helm/will-it-compile \
   --values ./deployments/helm/will-it-compile/values-dev.yaml
+
+# Option B: Pre-load local images for offline testing
+kind load docker-image stlpine/will-it-compile-api:latest --name will-it-compile
+kind load docker-image gcc:13 --name will-it-compile
+kind load docker-image golang:1.22-alpine --name will-it-compile
+kind load docker-image rust:1.75-alpine --name will-it-compile
 
 # Access the service
 kubectl port-forward svc/will-it-compile 8080:80
@@ -69,17 +93,41 @@ minikube service will-it-compile
 
 ## Production Deployment
 
-### 1. Prepare Container Registry
+### 1. Container Registry Options
+
+**Option A: Use Docker Hub (stlpine) - Recommended for Quick Start**
+
+Images are automatically published on every main branch commit. No setup needed.
+
+```bash
+# Images used:
+# - stlpine/will-it-compile-api:latest (API server, auto-published)
+# - gcc:13 (official C/C++ compiler, from Docker Hub)
+# - golang:1.22-alpine (official Go compiler, from Docker Hub)
+# - rust:1.75-alpine (official Rust compiler, from Docker Hub)
+
+# Deploy directly using Helm defaults
+helm install will-it-compile ./deployments/helm/will-it-compile \
+  --namespace will-it-compile --create-namespace \
+  --values ./deployments/helm/will-it-compile/values-production.yaml
+```
+
+**Option B: Use Your Own Private Registry**
 
 ```bash
 # Build and push API server image
 docker build -t your-registry.io/will-it-compile/api:v1.0.0 .
 docker push your-registry.io/will-it-compile/api:v1.0.0
 
-# Build and push compiler images
-cd images/cpp
-docker build -t your-registry.io/will-it-compile/cpp-gcc:13-alpine .
-docker push your-registry.io/will-it-compile/cpp-gcc:13-alpine
+# Note: Compiler images use official Docker Hub images (gcc:13, golang:1.22-alpine, rust:1.75-alpine)
+# No need to build or push compiler images unless you need custom modifications
+
+# Deploy with custom registry
+helm install will-it-compile ./deployments/helm/will-it-compile \
+  --namespace will-it-compile --create-namespace \
+  --values ./deployments/helm/will-it-compile/values-production.yaml \
+  --set image.repository=your-registry.io/will-it-compile/api \
+  --set compilerImages.cpp.repository=your-registry.io/will-it-compile/cpp-gcc
 ```
 
 ### 2. Create Namespace
@@ -329,7 +377,7 @@ kubectl auth can-i create jobs --as=system:serviceaccount:will-it-compile:will-i
 
 ```bash
 # Check if compiler image exists
-kubectl run test-compiler --image=will-it-compile/cpp-gcc:13-alpine --restart=Never -- /bin/sh -c "echo test"
+kubectl run test-compiler --image=gcc:13 --restart=Never -- /bin/sh -c "echo test"
 kubectl logs test-compiler
 kubectl delete pod test-compiler
 

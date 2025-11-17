@@ -23,11 +23,15 @@ type CompilationConfig struct {
 	// JobID is a unique identifier for this compilation
 	JobID string
 
-	// ImageTag is the container image to use (e.g., "will-it-compile/cpp-gcc:13-alpine")
+	// ImageTag is the container image to use (e.g., "gcc:13", "golang:1.22-alpine")
 	ImageTag string
 
 	// SourceCode is the actual source code to compile
 	SourceCode string
+
+	// CompileCommand is the shell command to run (e.g., "g++ -std=c++17 source.cpp -o output")
+	// If empty, a default will be used based on the image
+	CompileCommand string
 
 	// Env is a list of environment variables in "KEY=VALUE" format
 	Env []string
