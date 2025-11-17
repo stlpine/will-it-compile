@@ -139,6 +139,30 @@ Benefits:
 
 **Location**: `internal/docker/client.go:93` (createSecureContainer)
 
+### 5. Separate Dockerfiles for Dev and Production
+**Decision**: Use `Dockerfile.dev` for local development and `Dockerfile` for production
+
+**Rationale**:
+- **Development (`Dockerfile.dev`)**: Runs as root for Docker socket access (Docker-in-Docker pattern)
+  - Works across different local environments (macOS, Linux, OrbStack, Docker Desktop)
+  - No permission issues with `/var/run/docker.sock`
+  - Simpler setup for developers
+- **Production (`Dockerfile`)**: Non-root user for security
+  - Follows security best practices (principle of least privilege)
+  - No Docker socket needed (uses Kubernetes Jobs API instead)
+  - Multi-stage build with minimal attack surface
+
+**Why separate files?**
+- Local dev requires Docker socket access → permission challenges vary by OS/setup
+- Production (Kubernetes) never uses Docker socket → security anti-pattern
+- One Dockerfile can't optimally serve both use cases
+
+**Location**:
+- `Dockerfile.dev` - Development (used by docker-compose.yml)
+- `Dockerfile` - Production (used by Kubernetes/cloud deployments)
+
+**⚠️ Important**: Never use `Dockerfile.dev` in production. It runs as root and is designed for trusted local environments only.
+
 ## Key Components
 
 ### HTTP Framework
@@ -276,6 +300,13 @@ chmod +x scripts/test-api.sh
 
 ### Docker Operations
 ```bash
+# Build and run with docker-compose (local development)
+docker compose up --build
+
+# Build API server images
+docker build -f Dockerfile.dev -t will-it-compile-api:dev .    # Development
+docker build -f Dockerfile -t will-it-compile-api:latest .      # Production
+
 # Build C++ compiler image
 cd images/cpp && ./build.sh
 

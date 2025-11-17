@@ -1,9 +1,11 @@
 services:
   # API Server (Go)
+  # Uses Dockerfile.dev which runs as root for Docker socket access
+  # Production uses Dockerfile (non-root) with Kubernetes Jobs API
   api:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: will-it-compile-api
     ports:
       - "8080:8080"
@@ -22,7 +24,7 @@ services:
       - will-it-compile
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "-O", "/dev/null", "http://localhost:8080/health"]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -37,7 +39,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - VITE_API_URL=http://localhost:8080
+      - VITE_API_URL=http://localhost:8080/api/v1
     volumes:
       # Mount source for hot reload
       - ./web/src:/app/src
