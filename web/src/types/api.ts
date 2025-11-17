@@ -2,8 +2,22 @@
 
 // Enums
 export type Language = 'c' | 'cpp' | 'c++' | 'go' | 'rust'
-export type Compiler = 'gcc-13' | 'clang-15' | 'go' | 'rustc'
-export type Standard = 'c++11' | 'c++14' | 'c++17' | 'c++20' | 'c++23' | ''
+export type Compiler = 'gcc-13' | 'gcc-11' | 'gcc-9' | 'clang-15' | 'go' | 'rustc'
+export type Standard =
+  // C++ standards
+  | 'c++11'
+  | 'c++14'
+  | 'c++17'
+  | 'c++20'
+  | 'c++23'
+  // C standards
+  | 'c89'
+  | 'c99'
+  | 'c11'
+  | 'c17'
+  | 'c23'
+  // Empty string for languages without standards
+  | ''
 export type Architecture = 'x86_64' | 'arm64' | 'arm' | ''
 export type OS = 'linux' | 'windows' | 'macos' | ''
 export type JobStatus =

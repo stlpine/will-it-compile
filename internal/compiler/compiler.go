@@ -181,19 +181,23 @@ func (c *Compiler) Compile(ctx context.Context, job models.CompilationJob) model
 		}
 	}
 
+	// Determine source filename based on language
+	sourceFilename := c.getSourceFilename(envSpec.Language)
+
 	// Build compile command based on language
-	compileCmd := c.buildCompileCommand(envSpec)
+	compileCmd := c.buildCompileCommand(envSpec, sourceFilename)
 
 	// Prepare runtime configuration
 	config := runtime.CompilationConfig{
 		JobID:          job.ID,
 		ImageTag:       envSpec.ImageTag,
 		SourceCode:     string(sourceCode),
+		SourceFilename: sourceFilename,
 		CompileCommand: compileCmd,
 		WorkDir:        "/workspace",
 		Env: []string{
-			fmt.Sprintf("CPP_STANDARD=%s", envSpec.Standard),
-			"SOURCE_FILE=/workspace/source.cpp",
+			fmt.Sprintf("STANDARD=%s", envSpec.Standard),
+			fmt.Sprintf("SOURCE_FILE=/workspace/%s", sourceFilename),
 			"COMPILE_TIMEOUT=25",
 		},
 		Timeout: 30 * time.Second,
@@ -241,10 +245,20 @@ func (c *Compiler) validateRequest(req models.CompilationRequest) error {
 		return ErrSourceCodeTooLarge
 	}
 
-	// Validate language support (for MVP, only cpp is supported)
+	// Validate language support - check if we have environments for this language
 	normalizedLang := req.Language.Normalize()
-	if normalizedLang != models.LanguageCpp {
-		return fmt.Errorf("%w: %s (supported: cpp)", ErrUnsupportedLanguage, req.Language)
+
+	// Check if any environment supports this language
+	hasSupport := false
+	for _, env := range c.environments {
+		if env.Language == normalizedLang {
+			hasSupport = true
+			break
+		}
+	}
+
+	if !hasSupport {
+		return fmt.Errorf("%w: %s", ErrUnsupportedLanguage, req.Language)
 	}
 
 	return nil
@@ -278,37 +292,105 @@ func (c *Compiler) selectEnvironment(req models.CompilationRequest) (models.Envi
 }
 
 // buildCompileCommand builds the compilation command based on the environment.
-func (c *Compiler) buildCompileCommand(env models.EnvironmentSpec) string {
+func (c *Compiler) buildCompileCommand(env models.EnvironmentSpec, sourceFilename string) string {
 	// Build command based on language
 	// Note: stderr is NOT redirected to stdout so errors appear in stderr field
 	switch env.Language {
 	case models.LanguageCpp, models.LanguageC:
 		// C/C++ compilation with GCC or Clang
-		return fmt.Sprintf("g++ -std=%s ${SOURCE_FILE} -o /workspace/output", env.Standard)
+		return fmt.Sprintf("g++ -std=%s /workspace/%s -o /workspace/output", env.Standard, sourceFilename)
 
 	case models.LanguageGo:
 		// Go compilation
-		return "go build -o /workspace/output ${SOURCE_FILE}"
+		return fmt.Sprintf("go build -o /workspace/output /workspace/%s", sourceFilename)
 
 	case models.LanguageRust:
 		// Rust compilation
-		return "rustc ${SOURCE_FILE} -o /workspace/output"
+		return fmt.Sprintf("rustc /workspace/%s -o /workspace/output", sourceFilename)
 
 	default:
 		// Fallback to C++ (should not happen due to validation)
-		return fmt.Sprintf("g++ -std=%s ${SOURCE_FILE} -o /workspace/output", env.Standard)
+		return fmt.Sprintf("g++ -std=%s /workspace/%s -o /workspace/output", env.Standard, sourceFilename)
+	}
+}
+
+// getSourceFilename returns the appropriate source filename based on language.
+func (c *Compiler) getSourceFilename(language models.Language) string {
+	switch language {
+	case models.LanguageC:
+		return "source.c"
+	case models.LanguageCpp:
+		return "source.cpp"
+	case models.LanguageGo:
+		return "main.go"
+	case models.LanguageRust:
+		return "main.rs"
+	default:
+		return "source.cpp"
 	}
 }
 
 // GetSupportedEnvironments returns a list of supported environments.
 func (c *Compiler) GetSupportedEnvironments() []models.Environment {
-	return []models.Environment{
-		{
-			Language:  "cpp",
-			Compilers: []string{"gcc-13"},
-			Standards: []string{"c++11", "c++14", "c++17", "c++20", "c++23"},
-			OSes:      []string{"linux"},
-			Arches:    []string{"x86_64"},
-		},
+	// Group environment specs by language
+	langMap := make(map[models.Language]*models.Environment)
+
+	for _, envSpec := range c.environments {
+		lang := envSpec.Language
+
+		// Initialize environment for this language if not exists
+		if langMap[lang] == nil {
+			langMap[lang] = &models.Environment{
+				Language:  string(lang),
+				Compilers: []string{},
+				Standards: []string{},
+				OSes:      []string{},
+				Arches:    []string{},
+			}
+		}
+
+		env := langMap[lang]
+
+		// Add compiler if not already in list
+		compilerStr := string(envSpec.Compiler)
+		if !contains(env.Compilers, compilerStr) {
+			env.Compilers = append(env.Compilers, compilerStr)
+		}
+
+		// Add standard if not already in list
+		standardStr := string(envSpec.Standard)
+		if standardStr != "" && !contains(env.Standards, standardStr) {
+			env.Standards = append(env.Standards, standardStr)
+		}
+
+		// Add OS if not already in list
+		osStr := string(envSpec.OS)
+		if !contains(env.OSes, osStr) {
+			env.OSes = append(env.OSes, osStr)
+		}
+
+		// Add architecture if not already in list
+		archStr := string(envSpec.Architecture)
+		if !contains(env.Arches, archStr) {
+			env.Arches = append(env.Arches, archStr)
+		}
 	}
+
+	// Convert map to slice
+	result := make([]models.Environment, 0, len(langMap))
+	for _, env := range langMap {
+		result = append(result, *env)
+	}
+
+	return result
+}
+
+// contains checks if a string slice contains a specific string.
+func contains(slice []string, str string) bool {
+	for _, s := range slice {
+		if s == str {
+			return true
+		}
+	}
+	return false
 }
