@@ -17,7 +17,7 @@ A secure, cloud-ready service that checks whether code compiles in specified env
 
 ### Prerequisites
 
-- Go 1.24 or later
+- Go 1.25 or later
 - Docker
 - Make (optional, but recommended)
 
@@ -40,8 +40,8 @@ Or manually:
 # Install dependencies
 go mod download
 
-# Build Docker images
-cd images/cpp && chmod +x build.sh compile.sh && ./build.sh && cd ../..
+# Pull official compiler images
+make docker-pull
 
 # Build the API server
 go build -o bin/will-it-compile-api cmd/api/main.go
@@ -465,7 +465,7 @@ A custom seccomp profile restricts system calls to a minimal whitelist required 
 The API server can be containerized for deployment:
 
 ```dockerfile
-FROM golang:1.24-alpine AS builder
+FROM golang:1.25-alpine AS builder
 WORKDIR /app
 COPY . .
 RUN go build -o api cmd/api/main.go

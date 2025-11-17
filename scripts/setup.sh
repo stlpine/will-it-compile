@@ -12,7 +12,7 @@ echo "Checking prerequisites..."
 
 # Check Go
 if ! command -v go &> /dev/null; then
-    echo "❌ Go is not installed. Please install Go 1.24 or later."
+    echo "❌ Go is not installed. Please install Go 1.25 or later."
     exit 1
 fi
 echo "✓ Go $(go version | awk '{print $3}')"
@@ -36,11 +36,10 @@ echo "Installing dependencies..."
 go mod download
 
 echo ""
-echo "Building Docker images..."
-cd images/cpp
-chmod +x build.sh compile.sh
-./build.sh
-cd ../..
+echo "Pulling official compiler images..."
+docker pull gcc:13-alpine
+docker pull golang:1.22-alpine
+docker pull rust:1.75-alpine
 
 echo ""
 echo "Building API server..."

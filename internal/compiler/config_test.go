@@ -65,7 +65,7 @@ func TestConfigValidate(t *testing.T) {
 							{
 								Name:    "gcc",
 								Version: "13",
-								Image:   "will-it-compile/cpp-gcc:13-alpine",
+								Image:   "gcc:13-alpine",
 							},
 						},
 					},
@@ -180,7 +180,7 @@ func TestConfigToEnvironmentSpecs(t *testing.T) {
 					{
 						Name:          "gcc",
 						Version:       "13",
-						Image:         "will-it-compile/cpp-gcc:13-alpine",
+						Image:         "gcc:13-alpine",
 						Standards:     []string{"c++11", "c++14", "c++17", "c++20", "c++23"},
 						Architectures: []string{"x86_64"},
 						OSes:          []string{"linux"},
@@ -203,7 +203,7 @@ func TestConfigToEnvironmentSpecs(t *testing.T) {
 	assert.Equal(t, models.Standard("c++11"), spec.Standard) // First standard is default
 	assert.Equal(t, models.ArchX86_64, spec.Architecture)
 	assert.Equal(t, models.OSLinux, spec.OS)
-	assert.Equal(t, "will-it-compile/cpp-gcc:13-alpine", spec.ImageTag)
+	assert.Equal(t, "gcc:13-alpine", spec.ImageTag)
 }
 
 func TestConfigToEnvironmentSpecs_UnsupportedLanguage(t *testing.T) {
@@ -281,5 +281,5 @@ func TestGetHardcodedEnvironments(t *testing.T) {
 	assert.True(t, exists, "Should have cpp-gcc-13 environment")
 	assert.Equal(t, models.LanguageCpp, spec.Language)
 	assert.Equal(t, models.CompilerGCC13, spec.Compiler)
-	assert.Equal(t, "will-it-compile/cpp-gcc:13-alpine", spec.ImageTag)
+	assert.Equal(t, "gcc:13-alpine", spec.ImageTag)
 }

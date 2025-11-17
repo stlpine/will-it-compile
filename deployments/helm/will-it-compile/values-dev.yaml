@@ -4,14 +4,23 @@
 replicaCount: 1
 
 image:
-  repository: will-it-compile/api
+  repository: stlpine/will-it-compile-api
   pullPolicy: IfNotPresent
   tag: "latest"
 
+# Using official compiler images (same as values.yaml)
 compilerImages:
-  cpp:
-    repository: will-it-compile/cpp-gcc
-    tag: "13-alpine"
+  gcc:
+    repository: gcc
+    tags: ["13-alpine"]  # Dev uses latest version only
+    pullPolicy: IfNotPresent
+  go:
+    repository: golang
+    tags: ["1.23-alpine"]
+    pullPolicy: IfNotPresent
+  rust:
+    repository: rust
+    tags: ["1.80-alpine"]
     pullPolicy: IfNotPresent
 
 serviceAccount:

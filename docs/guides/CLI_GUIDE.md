@@ -23,7 +23,7 @@ sudo cp bin/will-it-compile /usr/local/bin/
 
 ### Prerequisites
 
-- Go 1.24+
+- Go 1.25+
 - Docker installed and running
 - Compiler images built: `make docker-build`
 
@@ -200,7 +200,7 @@ will-it-compile version --short
 will-it-compile version v1.0.0
   Git commit:    a1b2c3d
   Built:         2025-11-10_10:33:31
-  Go version:    go1.24.10
+  Go version:    go1.25.4
   OS/Arch:       darwin/arm64
 ```
 

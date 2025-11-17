@@ -4,15 +4,24 @@
 replicaCount: 3
 
 image:
-  repository: will-it-compile/api
-  pullPolicy: Always
-  tag: "v1.0.0"  # Use specific version, not 'latest'
+  repository: stlpine/will-it-compile-api
+  pullPolicy: IfNotPresent
+  tag: ""  # Specify git SHA or semantic version at deploy time, never use 'latest'
 
+# Official compiler images for production
 compilerImages:
-  cpp:
-    repository: will-it-compile/cpp-gcc
-    tag: "13-alpine"
-    pullPolicy: Always
+  gcc:
+    repository: gcc
+    tags: ["9-alpine", "11-alpine", "13-alpine"]
+    pullPolicy: IfNotPresent
+  go:
+    repository: golang
+    tags: ["1.22-alpine", "1.23-alpine"]
+    pullPolicy: IfNotPresent
+  rust:
+    repository: rust
+    tags: ["1.75-alpine", "1.80-alpine"]
+    pullPolicy: IfNotPresent
 
 serviceAccount:
   create: true

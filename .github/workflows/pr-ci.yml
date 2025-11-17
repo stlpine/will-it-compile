@@ -66,8 +66,11 @@ jobs:
       - name: Download dependencies
         run: go mod download
 
-      - name: Build Docker images
-        run: make docker-build
+      - name: Pull official compiler images
+        run: |
+          docker pull gcc:13-alpine
+          docker pull golang:1.22-alpine
+          docker pull rust:1.75-alpine
 
       - name: Run integration tests
         run: go test -v -race ./tests/integration/...
@@ -108,10 +111,15 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker images
-        run: make docker-build
+      - name: Build API server image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: stlpine/will-it-compile-api:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Verify Docker images
-        run: |
-          docker images | grep will-it-compile
-          docker inspect will-it-compile/cpp-gcc:13-alpine
+      - name: Verify API image
+        run: docker images | grep will-it-compile-api

@@ -20,36 +20,32 @@ echo
 echo "✓ Checking Docker images..."
 MISSING_IMAGES=()
 
-# List of required images (add more as you support more languages)
+# List of required official images (Docker will pull automatically if missing)
 REQUIRED_IMAGES=(
-    "will-it-compile/cpp-gcc:13-alpine"
+    "gcc:13-alpine"
+    "golang:1.22-alpine"
+    "rust:1.75-alpine"
 )
 
 for image in "${REQUIRED_IMAGES[@]}"; do
     if docker image inspect "$image" &> /dev/null; then
         echo "  ✓ Found: $image"
     else
-        echo "  ❌ Missing: $image"
+        echo "  ℹ️  Not cached: $image (will be pulled on first use)"
         MISSING_IMAGES+=("$image")
     fi
 done
 
 echo
 
-# If any images are missing, provide instructions
+# If any images are missing, suggest pulling them
 if [ ${#MISSING_IMAGES[@]} -gt 0 ]; then
-    echo "❌ ERROR: Missing required Docker images:"
-    for image in "${MISSING_IMAGES[@]}"; do
-        echo "   - $image"
-    done
+    echo "ℹ️  Some Docker images are not cached locally."
+    echo "   They will be pulled automatically on first use."
     echo
-    echo "To build missing images, run:"
-    echo "  make docker-build"
+    echo "To pre-pull images for faster first compilation, run:"
+    echo "  make docker-pull"
     echo
-    echo "Or build individually:"
-    echo "  cd images/cpp && ./build.sh"
-    echo
-    exit 1
 fi
 
 # Check if Go is installed
