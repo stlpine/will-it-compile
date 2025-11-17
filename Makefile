@@ -83,8 +83,8 @@ docker-test: docker-build ## Test Docker image
 docker-up: docker-build ## Start docker compose services (builds compiler image first)
 	docker compose up -d
 
-docker-down: ## Stop docker compose services
-	docker compose down
+docker-down: ## Stop docker compose services and remove volumes
+	docker compose down -v
 
 docker-logs: ## View docker compose logs
 	docker compose logs -f
