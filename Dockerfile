@@ -10,14 +10,11 @@ WORKDIR /app
 # Copy dependency files
 COPY go.mod go.sum ./
 
-# Download dependencies
-RUN go mod download
-
-# Copy source code
+# Copy source code and Makefile
 COPY . .
 
-# Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o will-it-compile-api ./cmd/api
+# Build the application using Makefile (handles deps automatically)
+RUN make build-api
 
 # Runtime stage
 FROM alpine:3.19
@@ -32,7 +29,7 @@ RUN adduser -D -u 1001 apiuser
 WORKDIR /app
 
 # Copy binary from builder
-COPY --from=builder /app/will-it-compile-api .
+COPY --from=builder /app/bin/will-it-compile-api .
 
 # Copy configuration files
 COPY --from=builder /app/configs ./configs
