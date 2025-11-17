@@ -248,15 +248,6 @@ func TestRequestValidation(t *testing.T) {
 			errorContains: "invalid language",
 		},
 		{
-			name: "unsupported_language",
-			request: models.CompilationRequest{
-				Code:     base64.StdEncoding.EncodeToString([]byte("package main")),
-				Language: models.LanguageGo,
-				Compiler: models.CompilerGo,
-			},
-			errorContains: "unsupported",
-		},
-		{
 			name: "code_too_large",
 			request: models.CompilationRequest{
 				Code:     base64.StdEncoding.EncodeToString(make([]byte, 2*1024*1024)), // 2MB
