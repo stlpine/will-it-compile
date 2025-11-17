@@ -1,17 +1,18 @@
 # Docker Setup Guide
 
-This document provides comprehensive instructions for running **will-it-compile** using Docker and Docker Compose.
+This document provides instructions for running **will-it-compile** locally using Docker and Docker Compose for development.
+
+**For Production Deployment**: Use Kubernetes. See [`docs/architecture/KUBERNETES_ARCHITECTURE.md`](./docs/architecture/KUBERNETES_ARCHITECTURE.md) and [`deployments/helm/`](./deployments/helm/).
 
 ## Table of Contents
 
 1. [Prerequisites](#prerequisites)
 2. [Quick Start](#quick-start)
 3. [Development Setup](#development-setup)
-4. [Production Deployment](#production-deployment)
-5. [Docker Images](#docker-images)
-6. [Architecture](#architecture)
-7. [Troubleshooting](#troubleshooting)
-8. [Advanced Configuration](#advanced-configuration)
+4. [Docker Images](#docker-images)
+5. [Architecture](#architecture)
+6. [Troubleshooting](#troubleshooting)
+7. [Advanced Configuration](#advanced-configuration)
 
 ## Prerequisites
 
@@ -41,7 +42,7 @@ docker ps
 
 ## Quick Start
 
-The fastest way to get the entire stack running:
+The fastest way to get the entire stack running locally:
 
 ```bash
 # Clone the repository
@@ -70,7 +71,7 @@ docker compose down
 
 ### Local Development with Hot Reload
 
-For active development, use the development Docker Compose configuration with mounted volumes for hot-reloading:
+For active development, Docker Compose provides hot-reloading for both backend and frontend:
 
 ```bash
 # Start development environment
@@ -96,7 +97,7 @@ docker compose down
   - **API**: Go source in `cmd/`, `internal/`, `pkg/` directories
   - **Web**: React source in `web/src/` directory
 - **Debug Logs**: `LOG_LEVEL=debug` enabled
-- **Source Mounts**: Code changes reflect immediately
+- **Source Mounts**: Code changes reflect immediately without rebuilding
 
 ### Individual Service Management
 
@@ -136,94 +137,37 @@ docker compose build compiler-cpp
 docker images | grep will-it-compile/cpp-gcc
 ```
 
-## Production Deployment
-
-### Production Docker Compose
-
-For production deployments, use the production-optimized configuration:
-
-```bash
-# Build and start production stack
-docker compose -f docker-compose.prod.yml up -d
-
-# View production logs
-docker compose -f docker-compose.prod.yml logs -f
-
-# Stop production stack
-docker compose -f docker-compose.prod.yml down
-```
-
-### Production Features
-
-- **Optimized Builds**: Multi-stage builds with minimal image sizes
-- **Resource Limits**: CPU and memory constraints
-- **Security Hardening**:
-  - Read-only root filesystem (where possible)
-  - No new privileges
-  - Non-root users
-- **Health Checks**: Automated health monitoring
-- **Auto Restart**: Services restart on failure
-- **Production Logging**: `LOG_LEVEL=info`
-
-### Production Environment Variables
-
-Create a `.env.production` file:
-
-```env
-# API Configuration
-PORT=8080
-LOG_LEVEL=info
-
-# Frontend Configuration
-VITE_API_URL=http://api:8080
-
-# Security (optional)
-# RATE_LIMIT_REQUESTS=10
-# RATE_LIMIT_WINDOW=60
-```
-
-Use it with:
-
-```bash
-docker compose -f docker-compose.prod.yml --env-file .env.production up -d
-```
-
-### Resource Limits
-
-Current production resource limits:
-
-| Service | CPU Limit | Memory Limit | CPU Reservation | Memory Reservation |
-|---------|-----------|--------------|-----------------|-------------------|
-| API     | 2 cores   | 1GB          | 0.5 cores       | 256MB            |
-| Web     | 0.5 cores | 256MB        | 0.1 cores       | 64MB             |
-
-Adjust in `docker-compose.prod.yml` under `deploy.resources`.
-
 ## Docker Images
 
 ### Image Overview
 
-| Image | Purpose | Base | Size (approx) |
-|-------|---------|------|---------------|
-| `will-it-compile-api` | API Server | `alpine:3.19` | ~50MB |
-| `will-it-compile-web` | Web Frontend | `nginx:alpine` | ~30MB |
-| `will-it-compile/cpp-gcc:13-alpine` | C++ Compiler | `alpine:3.19` | ~200MB |
+| Image | Purpose | Base | Size (approx) | Usage |
+|-------|---------|------|---------------|-------|
+| `will-it-compile-api` | API Server | `alpine:3.19` | ~50MB | Local dev + K8s |
+| `will-it-compile-web` | Web Frontend | `nginx:alpine` | ~30MB | Local dev + K8s |
+| `will-it-compile/cpp-gcc:13-alpine` | C++ Compiler | `alpine:3.19` | ~200MB | Compilation jobs |
 
-### Building Images Individually
+### Building Images for Kubernetes
+
+When deploying to Kubernetes, you'll need to build and push images to a registry:
 
 ```bash
 # Build API server image
-docker build -t will-it-compile-api:latest .
+docker build -t your-registry/will-it-compile-api:v1.0.0 .
 
-# Build web frontend image (production)
-docker build -t will-it-compile-web:latest ./web
-
-# Build web frontend image (development)
-docker build -t will-it-compile-web:dev -f ./web/Dockerfile.dev ./web
+# Build web frontend image
+docker build -t your-registry/will-it-compile-web:v1.0.0 ./web
 
 # Build C++ compiler image
-docker build -t will-it-compile/cpp-gcc:13-alpine ./images/cpp
+docker build -t your-registry/will-it-compile-cpp:gcc-13 ./images/cpp
+
+# Push to registry
+docker push your-registry/will-it-compile-api:v1.0.0
+docker push your-registry/will-it-compile-web:v1.0.0
+docker push your-registry/will-it-compile-cpp:gcc-13
 ```
+
+Then update your Kubernetes manifests or Helm values with the image URIs.
 
 ### Image Management
 
@@ -243,12 +187,12 @@ docker history will-it-compile-api:latest
 
 ## Architecture
 
-### Service Dependencies
+### Local Development Architecture
 
 ```
 ┌─────────────────┐
-│   Web Frontend  │ :80
-│     (nginx)     │
+│   Web Frontend  │ :3000
+│  (Vite Dev)     │
 └────────┬────────┘
          │
          │ HTTP
@@ -273,27 +217,20 @@ docker history will-it-compile-api:latest
 └─────────────────┘
 ```
 
-### Network Architecture
+### Docker Compose Services
 
 - **Network**: `will-it-compile` (bridge)
 - **Web → API**: Internal service-to-service communication
 - **API → Docker**: Host socket mount (`/var/run/docker.sock`)
 - **External Access**:
-  - Web UI: Port 3000 (dev) / 80 (prod)
+  - Web UI: Port 3000
   - API: Port 8080
 
-### Volume Mounts
+### Volume Mounts (Development)
 
-#### Development
-
-- API: Source code directories for hot reload
-- Web: Source code directories for hot reload
-- Both: Docker socket for container orchestration
-
-#### Production
-
-- API: Docker socket only (read-only root filesystem)
-- Web: No volumes (static built files in image)
+- **API**: Source code directories (`cmd/`, `internal/`, `pkg/`, `configs/`) mounted for hot reload
+- **Web**: Source code directories (`src/`, `public/`) mounted for hot reload
+- **Both**: Docker socket for container orchestration
 
 ## Troubleshooting
 
@@ -355,14 +292,11 @@ ping google.com
 # View logs
 docker compose logs api
 
-# Increase memory limits in docker-compose.yml
-deploy:
-  resources:
-    limits:
-      memory: 2G
-
 # Check Docker daemon memory
 docker info | grep Memory
+
+# Increase Docker Desktop memory (macOS/Windows)
+# Docker Desktop → Settings → Resources → Memory
 ```
 
 #### 5. Hot Reload Not Working
@@ -385,8 +319,8 @@ docker compose up --build
 # Check API health
 curl http://localhost:8080/health
 
-# Check web health
-curl http://localhost:3000/health
+# Check web accessibility
+curl http://localhost:3000
 
 # View health status in Docker
 docker ps --format "table {{.Names}}\t{{.Status}}"
@@ -440,7 +374,7 @@ LOG_LEVEL=debug
 # Frontend Configuration
 VITE_API_URL=http://localhost:8080
 
-# Docker Configuration
+# Docker Configuration (advanced)
 DOCKER_SOCKET=/var/run/docker.sock
 ```
 
@@ -473,40 +407,60 @@ Benefits:
 - Faster deployments
 - Reduced attack surface
 
-### Security Hardening
+### Production Deployment Options
 
-Additional security measures in production:
+#### Option 1: Kubernetes (Recommended)
 
-```yaml
-services:
-  api:
-    security_opt:
-      - no-new-privileges:true
-      - seccomp:unconfined  # Or use custom seccomp profile
-    cap_drop:
-      - ALL
-    cap_add:
-      - NET_BIND_SERVICE
-    read_only: true
-    tmpfs:
-      - /tmp
-      - /var/run
+For production, deploy using Kubernetes:
+
+```bash
+# Using Helm (recommended)
+cd deployments/helm
+helm install will-it-compile ./will-it-compile-chart \
+  --namespace will-it-compile \
+  --create-namespace
+
+# Or using kubectl with manifests
+kubectl apply -f deployments/k8s/
 ```
 
-### Kubernetes Deployment
-
-**Important**: The Docker-based setup described here is **not suitable for Kubernetes**.
-
-For Kubernetes deployments, see:
+See:
 - [`docs/architecture/KUBERNETES_ARCHITECTURE.md`](./docs/architecture/KUBERNETES_ARCHITECTURE.md)
-- Uses Kubernetes Jobs API instead of Docker client
-- Proper RBAC and Pod Security Standards
+- [`deployments/DEPLOYMENT_GUIDE.md`](./deployments/DEPLOYMENT_GUIDE.md)
 
-The Docker socket approach works for:
-- ✅ Local development
-- ✅ Single-server deployments
-- ✅ VM-based deployments with Docker installed
-- ❌ Kubernetes (requires different architecture)
+#### Option 2: Single-Server Docker Deployment
+
+For simple single-server deployments without Kubernetes:
+
+```bash
+# Build images
+docker build -t will-it-compile-api:latest .
+docker build -t will-it-compile-web:latest ./web
+
+# Run API server
+docker run -d \
+  --name will-it-compile-api \
+  --restart unless-stopped \
+  -p 8080:8080 \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -e LOG_LEVEL=info \
+  will-it-compile-api:latest
+
+# Run web frontend
+docker run -d \
+  --name will-it-compile-web \
+  --restart unless-stopped \
+  -p 80:80 \
+  --link will-it-compile-api:api \
+  will-it-compile-web:latest
+```
+
+**Note**: This approach is suitable for:
+- Development/testing environments
+- Small-scale single-server deployments
+- Quick prototypes
+
+For production with high availability, use Kubernetes.
 
 ## Useful Commands
 
@@ -531,8 +485,8 @@ docker compose build
 # View running services
 docker compose ps
 
-# Scale services (not recommended for this app)
-docker compose up -d --scale api=3
+# View service configuration
+docker compose config
 ```
 
 ### Docker
@@ -565,7 +519,7 @@ docker logs will-it-compile-api > api.log 2>&1
 - Mount only essential directories
 - Use `docker compose up` without `-d` to see logs immediately
 
-### Production
+### Image Building
 
 - Enable BuildKit: `DOCKER_BUILDKIT=1 docker build`
 - Use layer caching effectively
@@ -590,10 +544,11 @@ docker system df -v
 
 ## Next Steps
 
-- Review [README.md](./README.md) for API usage
-- See [CLAUDE.md](./CLAUDE.md) for architecture details
-- Check [docs/architecture/](./docs/architecture/) for deployment guides
-- Read [web/README.md](./web/README.md) for frontend development
+- **Local Development**: Start with `docker compose up` and begin coding
+- **Production Deployment**: See [`docs/architecture/KUBERNETES_ARCHITECTURE.md`](./docs/architecture/KUBERNETES_ARCHITECTURE.md)
+- **API Usage**: Review [README.md](./README.md) for API documentation
+- **Architecture**: Check [CLAUDE.md](./CLAUDE.md) for project structure
+- **Frontend Development**: See [web/README.md](./web/README.md)
 
 ## Support
 
@@ -608,3 +563,5 @@ For issues or questions:
 **Last Updated**: 2025-11-17
 **Docker Version**: 20.10+
 **Docker Compose Version**: 2.0+
+**Purpose**: Local development environment
+**Production**: Deploy with Kubernetes (see docs/architecture/)
