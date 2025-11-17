@@ -1,8 +1,8 @@
 # Build stage
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 
-# Install pnpm
-RUN npm install -g pnpm@9
+# Enable pnpm via corepack
+RUN corepack enable
 
 # Set working directory
 WORKDIR /app
