@@ -112,9 +112,12 @@ jobs:
           tags: stlpine/will-it-compile-api:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          outputs: type=docker
 
       - name: Verify API image
-        run: docker images | grep will-it-compile-api
+        run: |
+          docker images
+          docker images | grep will-it-compile-api
 
   # CD: Push Docker images to Docker Hub after CI passes
   docker-push:
