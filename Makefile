@@ -1,4 +1,4 @@
-.PHONY: help build build-api build-cli build-tui run run-tui test clean docker-build docker-clean deps install
+.PHONY: help build build-api build-cli build-tui run run-tui test clean docker-build docker-clean docker-up docker-down docker-logs docker-restart docker-ps deps install
 
 # Variables
 API_BINARY=will-it-compile-api
@@ -79,6 +79,21 @@ docker-test: docker-build ## Test Docker image
 		-v /tmp/test.cpp:/workspace/source.cpp:ro \
 		will-it-compile/cpp-gcc:13-alpine
 	@rm /tmp/test.cpp
+
+docker-up: docker-build ## Start docker compose services (builds compiler image first)
+	docker compose up -d
+
+docker-down: ## Stop docker compose services
+	docker compose down
+
+docker-logs: ## View docker compose logs
+	docker compose logs -f
+
+docker-restart: ## Restart docker compose services
+	docker compose restart
+
+docker-ps: ## Show running docker compose containers
+	docker compose ps
 
 fmt: ## Format Go code
 	$(GO) fmt ./...
