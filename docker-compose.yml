@@ -22,8 +22,6 @@ services:
       - ./configs:/app/configs
     networks:
       - will-it-compile
-    depends_on:
-      - compiler-cpp
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
@@ -59,18 +57,6 @@ services:
     stdin_open: true
     tty: true
 
-  # C++ Compiler Image (build)
-  compiler-cpp:
-    build:
-      context: ./images/cpp
-      dockerfile: Dockerfile
-    image: will-it-compile/cpp-gcc:13-alpine
-    container_name: compiler-cpp-builder
-    command: ["true"]  # Do nothing, just ensure image is built
-
 networks:
   will-it-compile:
     driver: bridge
-
-volumes:
-  pnpm-store:
