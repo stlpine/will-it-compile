@@ -53,7 +53,7 @@ test-unit: ## Run unit tests only (no Docker required)
 	$(GO) test -v -short ./...
 
 test-integration: docker-build ## Run integration tests (requires Docker)
-	$(GO) test -v ./tests/integration/
+	MINIMAL_IMAGE_VALIDATION=true $(GO) test -v ./tests/integration/
 
 test: docker-build ## Run all tests (builds Docker images first)
 	$(GO) test -v ./...

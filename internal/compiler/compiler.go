@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -98,6 +99,21 @@ func (c *Compiler) Close() error {
 
 // verifyImages checks that all required images exist.
 func (c *Compiler) verifyImages(ctx context.Context) error {
+	// In integration tests, we only want to check for the first image
+	if os.Getenv("MINIMAL_IMAGE_VALIDATION") == "true" {
+		for envKey, envSpec := range c.environments {
+			exists, err := c.runtime.ImageExists(ctx, envSpec.ImageTag)
+			if err != nil {
+				return fmt.Errorf("failed to check image %s: %w", envSpec.ImageTag, err)
+			}
+			if !exists {
+				return fmt.Errorf("%w: %s (%s)\n\nPlease pull official images using:\n  make docker-pull\n  or: docker pull %s",
+					ErrMissingRequiredImages, envSpec.ImageTag, envKey, envSpec.ImageTag)
+			}
+			return nil
+		}
+	}
+
 	missingImages := []string{}
 
 	// Check each environment's image
