@@ -50,21 +50,31 @@ func (c Compiler) Valid() bool {
 	}
 }
 
-// Standard represents a language standard (primarily for C++).
+// Standard represents a language standard (for C and C++).
 type Standard string
 
 const (
+	// C++ standards
 	StandardCpp11 Standard = "c++11"
 	StandardCpp14 Standard = "c++14"
 	StandardCpp17 Standard = "c++17"
 	StandardCpp20 Standard = "c++20"
 	StandardCpp23 Standard = "c++23"
+
+	// C standards
+	StandardC89 Standard = "c89"
+	StandardC99 Standard = "c99"
+	StandardC11 Standard = "c11"
+	StandardC17 Standard = "c17"
+	StandardC23 Standard = "c23"
 )
 
 // Valid returns true if the standard is valid.
 func (s Standard) Valid() bool {
 	switch s {
 	case StandardCpp11, StandardCpp14, StandardCpp17, StandardCpp20, StandardCpp23:
+		return true
+	case StandardC89, StandardC99, StandardC11, StandardC17, StandardC23:
 		return true
 	case "": // Empty is valid (will use default)
 		return true

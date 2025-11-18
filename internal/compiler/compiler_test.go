@@ -182,13 +182,13 @@ func TestValidateRequest(t *testing.T) {
 			errorMsg:    "source code is required",
 		},
 		{
-			name: "unsupported_language",
+			name: "supported_go_language",
 			request: models.CompilationRequest{
 				Code:     base64.StdEncoding.EncodeToString([]byte("package main")),
 				Language: models.LanguageGo,
+				Compiler: models.CompilerGo,
 			},
-			expectError: true,
-			errorMsg:    "unsupported language",
+			expectError: false,
 		},
 		{
 			name: "code_too_large",
@@ -379,8 +379,382 @@ func TestCompile_VerifyRuntimeConfig(t *testing.T) {
 	assert.True(t, result.Success)
 	assert.Equal(t, "gcc:13", capturedConfig.ImageTag)
 	assert.Equal(t, sourceCode, capturedConfig.SourceCode)
+	assert.Equal(t, "source.cpp", capturedConfig.SourceFilename)
 	assert.Equal(t, "/workspace", capturedConfig.WorkDir)
-	assert.Contains(t, capturedConfig.Env, "CPP_STANDARD=c++17")
+	assert.Contains(t, capturedConfig.Env, "STANDARD=c++17")
+	assert.Contains(t, capturedConfig.Env, "SOURCE_FILE=/workspace/source.cpp")
 	assert.Equal(t, job.ID, capturedConfig.JobID)
 	assert.Equal(t, 30*time.Second, capturedConfig.Timeout)
+}
+
+// TestCompile_CLanguage tests C language compilation.
+func TestCompile_CLanguage(t *testing.T) {
+	var capturedConfig runtime.CompilationConfig
+
+	mockRuntime := &runtime.MockRuntime{
+		CompileFunc: func(ctx context.Context, config runtime.CompilationConfig) (*runtime.CompilationOutput, error) {
+			capturedConfig = config
+			return &runtime.CompilationOutput{
+				Stdout:   "C compilation successful",
+				ExitCode: 0,
+				Duration: time.Second,
+			}, nil
+		},
+	}
+
+	compiler := NewCompilerWithRuntime(mockRuntime)
+
+	sourceCode := `#include <stdio.h>
+int main() { printf("Hello, C!\\n"); return 0; }`
+	encodedCode := base64.StdEncoding.EncodeToString([]byte(sourceCode))
+
+	job := models.CompilationJob{
+		ID: "test-c-job",
+		Request: models.CompilationRequest{
+			Code:     encodedCode,
+			Language: models.LanguageC,
+			Compiler: models.CompilerGCC13,
+			Standard: models.StandardC17,
+		},
+	}
+
+	result := compiler.Compile(context.Background(), job)
+
+	assert.True(t, result.Success, "Expected C compilation to succeed")
+	assert.True(t, result.Compiled, "Expected C code to compile")
+	assert.Equal(t, 0, result.ExitCode)
+
+	// Verify C-specific configuration
+	assert.Equal(t, "source.c", capturedConfig.SourceFilename, "Expected C source filename")
+	assert.Contains(t, capturedConfig.Env, "STANDARD=c17", "Expected C17 standard")
+	assert.Contains(t, capturedConfig.Env, "SOURCE_FILE=/workspace/source.c", "Expected C source file path")
+	assert.Contains(t, capturedConfig.CompileCommand, "source.c", "Expected compile command to use source.c")
+	assert.Contains(t, capturedConfig.CompileCommand, "c17", "Expected compile command to use c17 standard")
+}
+
+// TestCompile_GoLanguage tests Go language compilation.
+func TestCompile_GoLanguage(t *testing.T) {
+	var capturedConfig runtime.CompilationConfig
+
+	mockRuntime := &runtime.MockRuntime{
+		CompileFunc: func(ctx context.Context, config runtime.CompilationConfig) (*runtime.CompilationOutput, error) {
+			capturedConfig = config
+			return &runtime.CompilationOutput{
+				Stdout:   "Go compilation successful",
+				ExitCode: 0,
+				Duration: time.Second,
+			}, nil
+		},
+	}
+
+	compiler := NewCompilerWithRuntime(mockRuntime)
+
+	sourceCode := `package main
+import "fmt"
+func main() { fmt.Println("Hello, Go!") }`
+	encodedCode := base64.StdEncoding.EncodeToString([]byte(sourceCode))
+
+	job := models.CompilationJob{
+		ID: "test-go-job",
+		Request: models.CompilationRequest{
+			Code:     encodedCode,
+			Language: models.LanguageGo,
+			Compiler: models.CompilerGo,
+		},
+	}
+
+	result := compiler.Compile(context.Background(), job)
+
+	assert.True(t, result.Success, "Expected Go compilation to succeed")
+	assert.True(t, result.Compiled, "Expected Go code to compile")
+	assert.Equal(t, 0, result.ExitCode)
+
+	// Verify Go-specific configuration
+	assert.Equal(t, "main.go", capturedConfig.SourceFilename, "Expected Go source filename")
+	assert.Contains(t, capturedConfig.Env, "SOURCE_FILE=/workspace/main.go", "Expected Go source file path")
+	assert.Contains(t, capturedConfig.CompileCommand, "go build", "Expected Go build command")
+	assert.Contains(t, capturedConfig.CompileCommand, "main.go", "Expected compile command to use main.go")
+}
+
+// TestCompile_RustLanguage tests Rust language compilation.
+func TestCompile_RustLanguage(t *testing.T) {
+	var capturedConfig runtime.CompilationConfig
+
+	mockRuntime := &runtime.MockRuntime{
+		CompileFunc: func(ctx context.Context, config runtime.CompilationConfig) (*runtime.CompilationOutput, error) {
+			capturedConfig = config
+			return &runtime.CompilationOutput{
+				Stdout:   "Rust compilation successful",
+				ExitCode: 0,
+				Duration: time.Second,
+			}, nil
+		},
+	}
+
+	compiler := NewCompilerWithRuntime(mockRuntime)
+
+	sourceCode := `fn main() { println!("Hello, Rust!"); }`
+	encodedCode := base64.StdEncoding.EncodeToString([]byte(sourceCode))
+
+	job := models.CompilationJob{
+		ID: "test-rust-job",
+		Request: models.CompilationRequest{
+			Code:     encodedCode,
+			Language: models.LanguageRust,
+			Compiler: models.CompilerRustc,
+		},
+	}
+
+	result := compiler.Compile(context.Background(), job)
+
+	assert.True(t, result.Success, "Expected Rust compilation to succeed")
+	assert.True(t, result.Compiled, "Expected Rust code to compile")
+	assert.Equal(t, 0, result.ExitCode)
+
+	// Verify Rust-specific configuration
+	assert.Equal(t, "main.rs", capturedConfig.SourceFilename, "Expected Rust source filename")
+	assert.Contains(t, capturedConfig.Env, "SOURCE_FILE=/workspace/main.rs", "Expected Rust source file path")
+	assert.Contains(t, capturedConfig.CompileCommand, "rustc", "Expected rustc command")
+	assert.Contains(t, capturedConfig.CompileCommand, "main.rs", "Expected compile command to use main.rs")
+}
+
+// TestGetSourceFilename tests the source filename mapping for all languages.
+func TestGetSourceFilename(t *testing.T) {
+	compiler := NewCompilerWithRuntime(&runtime.MockRuntime{})
+
+	testCases := []struct {
+		language         models.Language
+		expectedFilename string
+	}{
+		{models.LanguageC, "source.c"},
+		{models.LanguageCpp, "source.cpp"},
+		{models.LanguageCPP, "source.cpp"}, // Alternative syntax
+		{models.LanguageGo, "main.go"},
+		{models.LanguageRust, "main.rs"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(string(tc.language), func(t *testing.T) {
+			filename := compiler.getSourceFilename(tc.language)
+			assert.Equal(t, tc.expectedFilename, filename,
+				"Expected %s to map to %s", tc.language, tc.expectedFilename)
+		})
+	}
+}
+
+// TestBuildCompileCommand tests compile command generation for all languages.
+func TestBuildCompileCommand(t *testing.T) {
+	compiler := NewCompilerWithRuntime(&runtime.MockRuntime{})
+
+	testCases := []struct {
+		name            string
+		envSpec         models.EnvironmentSpec
+		sourceFilename  string
+		expectedCommand string
+		shouldContain   []string
+	}{
+		{
+			name: "cpp_with_standard",
+			envSpec: models.EnvironmentSpec{
+				Language: models.LanguageCpp,
+				Standard: models.StandardCpp20,
+			},
+			sourceFilename:  "source.cpp",
+			expectedCommand: "g++ -std=c++20 /workspace/source.cpp -o /workspace/output",
+			shouldContain:   []string{"g++", "-std=c++20", "source.cpp"},
+		},
+		{
+			name: "c_with_standard",
+			envSpec: models.EnvironmentSpec{
+				Language: models.LanguageC,
+				Standard: models.StandardC11,
+			},
+			sourceFilename:  "source.c",
+			expectedCommand: "g++ -std=c11 /workspace/source.c -o /workspace/output",
+			shouldContain:   []string{"g++", "-std=c11", "source.c"},
+		},
+		{
+			name: "go_language",
+			envSpec: models.EnvironmentSpec{
+				Language: models.LanguageGo,
+			},
+			sourceFilename:  "main.go",
+			expectedCommand: "go build -o /workspace/output /workspace/main.go",
+			shouldContain:   []string{"go build", "main.go"},
+		},
+		{
+			name: "rust_language",
+			envSpec: models.EnvironmentSpec{
+				Language: models.LanguageRust,
+			},
+			sourceFilename:  "main.rs",
+			expectedCommand: "rustc /workspace/main.rs -o /workspace/output",
+			shouldContain:   []string{"rustc", "main.rs"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			command := compiler.buildCompileCommand(tc.envSpec, tc.sourceFilename)
+			assert.Equal(t, tc.expectedCommand, command, "Compile command mismatch")
+
+			for _, substr := range tc.shouldContain {
+				assert.Contains(t, command, substr,
+					"Expected compile command to contain '%s'", substr)
+			}
+		})
+	}
+}
+
+// TestMultiLanguageCompilation tests compilation with different languages in sequence.
+func TestMultiLanguageCompilation(t *testing.T) {
+	testCases := []struct {
+		name           string
+		language       models.Language
+		compiler       models.Compiler
+		standard       models.Standard
+		sourceCode     string
+		expectedFile   string
+		expectedStdEnv string
+	}{
+		{
+			name:           "cpp_compilation",
+			language:       models.LanguageCpp,
+			compiler:       models.CompilerGCC13,
+			standard:       models.StandardCpp17,
+			sourceCode:     `int main() { return 0; }`,
+			expectedFile:   "source.cpp",
+			expectedStdEnv: "STANDARD=c++17",
+		},
+		{
+			name:           "c_compilation",
+			language:       models.LanguageC,
+			compiler:       models.CompilerGCC13,
+			standard:       models.StandardC99,
+			sourceCode:     `int main() { return 0; }`,
+			expectedFile:   "source.c",
+			expectedStdEnv: "STANDARD=c99",
+		},
+		{
+			name:         "go_compilation",
+			language:     models.LanguageGo,
+			compiler:     models.CompilerGo,
+			sourceCode:   `package main; func main() {}`,
+			expectedFile: "main.go",
+		},
+		{
+			name:         "rust_compilation",
+			language:     models.LanguageRust,
+			compiler:     models.CompilerRustc,
+			sourceCode:   `fn main() {}`,
+			expectedFile: "main.rs",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var capturedConfig runtime.CompilationConfig
+
+			mockRuntime := &runtime.MockRuntime{
+				CompileFunc: func(ctx context.Context, config runtime.CompilationConfig) (*runtime.CompilationOutput, error) {
+					capturedConfig = config
+					return &runtime.CompilationOutput{
+						Stdout:   "Success",
+						ExitCode: 0,
+						Duration: time.Second,
+					}, nil
+				},
+			}
+
+			compiler := NewCompilerWithRuntime(mockRuntime)
+			encodedCode := base64.StdEncoding.EncodeToString([]byte(tc.sourceCode))
+
+			job := models.CompilationJob{
+				ID: "test-multi-" + tc.name,
+				Request: models.CompilationRequest{
+					Code:     encodedCode,
+					Language: tc.language,
+					Compiler: tc.compiler,
+					Standard: tc.standard,
+				},
+			}
+
+			result := compiler.Compile(context.Background(), job)
+
+			assert.True(t, result.Success, "Expected %s compilation to succeed", tc.language)
+			assert.Equal(t, tc.expectedFile, capturedConfig.SourceFilename,
+				"Expected %s to use %s", tc.language, tc.expectedFile)
+
+			if tc.expectedStdEnv != "" {
+				assert.Contains(t, capturedConfig.Env, tc.expectedStdEnv,
+					"Expected %s environment variable", tc.expectedStdEnv)
+			}
+		})
+	}
+}
+
+// TestLanguageValidation tests that all supported languages pass validation.
+func TestLanguageValidation(t *testing.T) {
+	compiler := NewCompilerWithRuntime(&runtime.MockRuntime{})
+
+	// These should now all pass validation (no longer MVP-restricted)
+	supportedLanguages := []models.Language{
+		models.LanguageC,
+		models.LanguageCpp,
+		models.LanguageCPP, // Alternative syntax
+		models.LanguageGo,
+		models.LanguageRust,
+	}
+
+	for _, lang := range supportedLanguages {
+		t.Run(string(lang), func(t *testing.T) {
+			req := models.CompilationRequest{
+				Code:     base64.StdEncoding.EncodeToString([]byte("test code")),
+				Language: lang,
+			}
+
+			err := compiler.validateRequest(req)
+			assert.NoError(t, err, "Expected %s to be supported", lang)
+		})
+	}
+}
+
+// TestCompileCommand_EdgeCases tests edge cases in compile command generation.
+func TestCompileCommand_EdgeCases(t *testing.T) {
+	compiler := NewCompilerWithRuntime(&runtime.MockRuntime{})
+
+	testCases := []struct {
+		name           string
+		envSpec        models.EnvironmentSpec
+		sourceFilename string
+		shouldNotPanic bool
+	}{
+		{
+			name: "empty_standard",
+			envSpec: models.EnvironmentSpec{
+				Language: models.LanguageCpp,
+				Standard: "",
+			},
+			sourceFilename: "source.cpp",
+			shouldNotPanic: true,
+		},
+		{
+			name: "unknown_language_fallback",
+			envSpec: models.EnvironmentSpec{
+				Language: models.Language("unknown"),
+				Standard: models.StandardCpp20,
+			},
+			sourceFilename: "source.cpp",
+			shouldNotPanic: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.NotPanics(t, func() {
+				command := compiler.buildCompileCommand(tc.envSpec, tc.sourceFilename)
+				assert.NotEmpty(t, command, "Expected non-empty compile command")
+			}, "buildCompileCommand should not panic")
+		})
+	}
 }

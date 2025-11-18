@@ -63,6 +63,7 @@ func (c *Client) ImageExists(ctx context.Context, imageTag string) (bool, error)
 type CompilationConfig struct {
 	ImageTag        string
 	SourceCode      string
+	SourceFilename  string // Name of the source file (e.g., "source.cpp", "main.go", "main.rs")
 	WorkDir         string
 	Env             []string
 	CompileCommand  string // Shell command to run compilation (e.g., "g++ -std=c++17 source.cpp -o output")
@@ -197,8 +198,14 @@ func (c *Client) createSecureContainer(ctx context.Context, config CompilationCo
 		return "", err
 	}
 
+	// Determine source filename (default to source.cpp if not specified)
+	sourceFilename := config.SourceFilename
+	if sourceFilename == "" {
+		sourceFilename = "source.cpp"
+	}
+
 	// Copy source code into container
-	if err := c.copySourceToContainer(ctx, resp.ID, config.SourceCode); err != nil {
+	if err := c.copySourceToContainer(ctx, resp.ID, config.SourceCode, sourceFilename); err != nil {
 		// Cleanup on error
 		_ = c.cli.ContainerRemove(context.Background(), resp.ID, container.RemoveOptions{Force: true}) //nolint:errcheck // already in error path
 		return "", fmt.Errorf("failed to copy source code: %w", err)
@@ -208,9 +215,9 @@ func (c *Client) createSecureContainer(ctx context.Context, config CompilationCo
 }
 
 // copySourceToContainer copies source code into the container.
-func (c *Client) copySourceToContainer(ctx context.Context, containerID, sourceCode string) error {
+func (c *Client) copySourceToContainer(ctx context.Context, containerID, sourceCode, sourceFilename string) error {
 	// Create a tar archive with the source code
-	tarContent, err := createSourceTar(sourceCode, "source.cpp")
+	tarContent, err := createSourceTar(sourceCode, sourceFilename)
 	if err != nil {
 		return err
 	}

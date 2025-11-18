@@ -32,6 +32,7 @@ func (d *DockerRuntime) Compile(ctx context.Context, config runtime.CompilationC
 	dockerConfig := docker.CompilationConfig{
 		ImageTag:       config.ImageTag,
 		SourceCode:     config.SourceCode,
+		SourceFilename: config.SourceFilename,
 		WorkDir:        config.WorkDir,
 		Env:            config.Env,
 		CompileCommand: config.CompileCommand,

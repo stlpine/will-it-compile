@@ -141,7 +141,7 @@ func (k *KubernetesRuntime) createSourceConfigMap(ctx context.Context, config ru
 			},
 		},
 		Data: map[string]string{
-			"source.cpp": config.SourceCode,
+			k.getSourceFilename(config): config.SourceCode,
 		},
 	}
 
@@ -403,6 +403,14 @@ func (k *KubernetesRuntime) convertEnv(envVars []string) []corev1.EnvVar {
 		}
 	}
 	return result
+}
+
+// getSourceFilename returns the source filename from config, defaulting to source.cpp.
+func (k *KubernetesRuntime) getSourceFilename(config runtime.CompilationConfig) string {
+	if config.SourceFilename != "" {
+		return config.SourceFilename
+	}
+	return "source.cpp"
 }
 
 // ptr is a helper to get pointer to a value.
