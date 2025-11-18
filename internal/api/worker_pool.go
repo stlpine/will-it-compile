@@ -66,7 +66,11 @@ func NewWorkerPool(maxWorkers int, queueSize int, server *Server) *WorkerPool {
 	}
 
 	// Initially all workers are available
-	pool.availableSlots.Store(int32(maxWorkers))
+	// Validate maxWorkers fits in int32 to avoid overflow
+	if maxWorkers > 2147483647 { // math.MaxInt32
+		maxWorkers = 2147483647
+	}
+	pool.availableSlots.Store(int32(maxWorkers)) //nolint:gosec // G115: maxWorkers validated to fit in int32
 
 	return pool
 }
@@ -153,9 +157,10 @@ func (wp *WorkerPool) worker(id int) {
 			// Check final job status
 			finalJob, exists := wp.server.jobs.Get(job.ID)
 			if exists {
-				if finalJob.Status == models.StatusCompleted {
+				switch finalJob.Status {
+				case models.StatusCompleted:
 					wp.totalSuccessful.Add(1)
-				} else if finalJob.Status == models.StatusFailed || finalJob.Status == models.StatusTimeout {
+				case models.StatusFailed, models.StatusTimeout:
 					wp.totalFailed.Add(1)
 				}
 			}

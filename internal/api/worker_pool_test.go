@@ -147,7 +147,8 @@ func TestWorkerPool_QueueFull(t *testing.T) {
 		jobs:     newJobStore(),
 	}
 
-	// Create worker pool with small queue
+	// Create worker pool with small queue (1 worker, queue size 2)
+	// This means: 1 job processing + 2 jobs in queue = 3 total capacity
 	pool := NewWorkerPool(1, 2, server)
 	pool.Start()
 	defer pool.Stop()
@@ -156,18 +157,21 @@ func TestWorkerPool_QueueFull(t *testing.T) {
 	job1 := models.CompilationJob{ID: "job1", Status: models.StatusQueued, CreatedAt: time.Now(), Request: models.CompilationRequest{Code: "test", Language: models.LanguageCpp}}
 	job2 := models.CompilationJob{ID: "job2", Status: models.StatusQueued, CreatedAt: time.Now(), Request: models.CompilationRequest{Code: "test", Language: models.LanguageCpp}}
 	job3 := models.CompilationJob{ID: "job3", Status: models.StatusQueued, CreatedAt: time.Now(), Request: models.CompilationRequest{Code: "test", Language: models.LanguageCpp}}
+	job4 := models.CompilationJob{ID: "job4", Status: models.StatusQueued, CreatedAt: time.Now(), Request: models.CompilationRequest{Code: "test", Language: models.LanguageCpp}}
 
 	server.jobs.Store(job1)
 	server.jobs.Store(job2)
 	server.jobs.Store(job3)
+	server.jobs.Store(job4)
 
-	// First two should be accepted (1 processing, 1 in queue)
+	// First three should be accepted (1 processing, 2 in queue)
 	assert.True(t, pool.Submit(job1), "First job should be accepted")
 	time.Sleep(50 * time.Millisecond) // Let first job start processing
 	assert.True(t, pool.Submit(job2), "Second job should be accepted")
+	assert.True(t, pool.Submit(job3), "Third job should be accepted")
 
-	// Third should be rejected (queue full)
-	assert.False(t, pool.Submit(job3), "Third job should be rejected (queue full)")
+	// Fourth should be rejected (queue full: 1 processing + 2 queued = capacity reached)
+	assert.False(t, pool.Submit(job4), "Fourth job should be rejected (queue full)")
 }
 
 func TestWorkerPool_MixedSuccessAndFailure(t *testing.T) {
