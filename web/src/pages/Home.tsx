@@ -209,6 +209,23 @@ export function Home() {
             </Alert>
           )}
 
+          {/* Validation Error - Moved to top for visibility */}
+          {validationError && (
+            <Alert variant="warning">
+              <AlertTriangle className="h-5 w-5" />
+              <AlertTitle>Validation Error</AlertTitle>
+              <AlertDescription>{validationError}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* Compilation Error - Moved to top for visibility */}
+          {error && !result && (
+            <Alert variant="destructive">
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
           {/* Environment Selector Card */}
           <Card>
             <CardHeader>
@@ -285,23 +302,6 @@ export function Home() {
               />
             </CardContent>
           </Card>
-
-          {/* Validation Error */}
-          {validationError && (
-            <Alert variant="warning">
-              <AlertTriangle className="h-5 w-5" />
-              <AlertTitle>Validation Error</AlertTitle>
-              <AlertDescription>{validationError}</AlertDescription>
-            </Alert>
-          )}
-
-          {/* Error Display */}
-          {error && !result && (
-            <Alert variant="destructive">
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
 
           {/* Compilation Result */}
           {result && (
