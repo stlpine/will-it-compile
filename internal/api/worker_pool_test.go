@@ -39,7 +39,7 @@ func TestWorkerPool_BasicFunctionality(t *testing.T) {
 }
 
 func TestWorkerPool_JobProcessing(t *testing.T) {
-	synctest.Run(func() {
+	synctest.Test(t, func(t *testing.T) {
 		// Create mock compiler with small delay
 		mockComp := &mockCompiler{
 			compileDelay: 50 * time.Millisecond,
@@ -90,7 +90,7 @@ func TestWorkerPool_JobProcessing(t *testing.T) {
 }
 
 func TestWorkerPool_ConcurrentJobs(t *testing.T) {
-	synctest.Run(func() {
+	synctest.Test(t, func(t *testing.T) {
 		// Create mock compiler with delay
 		mockComp := &mockCompiler{
 			compileDelay: 100 * time.Millisecond,
@@ -140,7 +140,7 @@ func TestWorkerPool_ConcurrentJobs(t *testing.T) {
 }
 
 func TestWorkerPool_QueueFull(t *testing.T) {
-	synctest.Run(func() {
+	synctest.Test(t, func(t *testing.T) {
 		// Create mock compiler with long delay
 		mockComp := &mockCompiler{
 			compileDelay: 1 * time.Second,
@@ -182,7 +182,7 @@ func TestWorkerPool_QueueFull(t *testing.T) {
 }
 
 func TestWorkerPool_MixedSuccessAndFailure(t *testing.T) {
-	synctest.Run(func() {
+	synctest.Test(t, func(t *testing.T) {
 		// Create server
 		server := &Server{
 			jobs: newJobStore(),
