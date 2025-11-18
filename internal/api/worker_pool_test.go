@@ -181,56 +181,6 @@ func TestWorkerPool_QueueFull(t *testing.T) {
 	})
 }
 
-func TestWorkerPool_MixedSuccessAndFailure(t *testing.T) {
-	synctest.Test(t, func(t *testing.T) {
-		// Create server
-		server := &Server{
-			jobs: newJobStore(),
-		}
-
-		// Create worker pool
-		pool := NewWorkerPool(3, 10, server)
-		pool.Start()
-		defer pool.Stop()
-
-		// Submit mix of successful and failing jobs
-		for i := 0; i < 5; i++ {
-			// Alternate between success and failure
-			shouldFail := i%2 == 1
-			mockComp := &mockCompiler{
-				compileDelay: 50 * time.Millisecond,
-				shouldFail:   shouldFail,
-			}
-
-			// Temporarily set compiler for this test
-			oldCompiler := server.compiler
-			server.compiler = mockComp
-
-			job := models.CompilationJob{
-				ID:        string(rune('a' + i)),
-				Status:    models.StatusQueued,
-				CreatedAt: time.Now(),
-				Request: models.CompilationRequest{
-					Code:     "test",
-					Language: models.LanguageCpp,
-				},
-			}
-			server.jobs.Store(job)
-			pool.Submit(job)
-
-			server.compiler = oldCompiler
-		}
-
-		// Wait for all jobs to complete (instant with virtualized time)
-		time.Sleep(300 * time.Millisecond)
-
-		// Note: This test is simplified and may not work perfectly
-		// because we're changing the compiler mid-flight
-		// In a real scenario, the compiler would determine success/failure
-		// based on the code content, not a mock setting
-	})
-}
-
 func TestWorkerPool_Uptime(t *testing.T) {
 	mockComp := &mockCompiler{
 		compileDelay: 0,
