@@ -99,6 +99,20 @@ export interface UICompilationState {
   error: string | null
 }
 
+// WorkerStats represents the current state of the worker pool
+export interface WorkerStats {
+  max_workers: number
+  active_workers: number
+  available_slots: number
+  queued_jobs: number
+  total_processed: number
+  total_successful: number
+  total_failed: number
+  uptime: string
+  uptime_seconds: number
+  start_time: string // ISO 8601 timestamp
+}
+
 // Default values for optional fields
 export const DEFAULT_STANDARD: Standard = 'c++20'
 export const DEFAULT_ARCHITECTURE: Architecture = 'x86_64'

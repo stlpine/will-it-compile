@@ -39,6 +39,7 @@ func NewEchoServer(server *Server, withRateLimit bool) *echo.Echo {
 	apiGroup.POST("/compile", server.HandleCompile)
 	apiGroup.GET("/compile/:job_id", server.HandleGetJob)
 	apiGroup.GET("/environments", server.HandleGetEnvironments)
+	apiGroup.GET("/workers/stats", server.HandleGetWorkerStats)
 
 	return e
 }

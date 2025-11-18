@@ -13,25 +13,54 @@ import (
 
 // Server represents the API server.
 type Server struct {
-	compiler compiler.CompilerInterface
-	jobs     *jobStore
+	compiler   compiler.CompilerInterface
+	jobs       *jobStore
+	workerPool *WorkerPool
 }
 
-// NewServer creates a new API server instance.
+// ServerConfig holds configuration for the server.
+type ServerConfig struct {
+	MaxWorkers int // Maximum number of concurrent workers (default: 5)
+	QueueSize  int // Size of the job queue (default: 100)
+}
+
+// DefaultServerConfig returns the default server configuration.
+func DefaultServerConfig() ServerConfig {
+	return ServerConfig{
+		MaxWorkers: 5,
+		QueueSize:  100,
+	}
+}
+
+// NewServer creates a new API server instance with default configuration.
 func NewServer() (*Server, error) {
+	return NewServerWithConfig(DefaultServerConfig())
+}
+
+// NewServerWithConfig creates a new API server instance with custom configuration.
+func NewServerWithConfig(config ServerConfig) (*Server, error) {
 	comp, err := compiler.NewCompiler()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create compiler: %w", err)
 	}
 
-	return &Server{
+	server := &Server{
 		compiler: comp,
 		jobs:     newJobStore(),
-	}, nil
+	}
+
+	// Create and start worker pool
+	server.workerPool = NewWorkerPool(config.MaxWorkers, config.QueueSize, server)
+	server.workerPool.Start()
+
+	return server, nil
 }
 
 // Close cleans up server resources.
 func (s *Server) Close() error {
+	if s.workerPool != nil {
+		s.workerPool.Stop()
+	}
 	return s.compiler.Close()
 }
 
@@ -64,8 +93,11 @@ func (s *Server) HandleCompile(c echo.Context) error {
 	// Store job
 	s.jobs.Store(job)
 
-	// Process asynchronously (MVP: goroutine, Phase 2: message queue)
-	go s.processJob(job)
+	// Submit to worker pool
+	if !s.workerPool.Submit(job) {
+		// Queue is full, return error
+		return echo.NewHTTPError(http.StatusServiceUnavailable, "job queue is full, please try again later")
+	}
 
 	// Return job response
 	response := models.JobResponse{
@@ -128,4 +160,13 @@ func (s *Server) HandleHealth(c echo.Context) error {
 		"status": "healthy",
 		"time":   time.Now().Format(time.RFC3339),
 	})
+}
+
+// HandleGetWorkerStats returns the current worker pool statistics
+//
+// @HTTP   GET /api/v1/workers/stats
+// @Return 200 {object} WorkerStats "Worker pool statistics".
+func (s *Server) HandleGetWorkerStats(c echo.Context) error {
+	stats := s.workerPool.GetStats()
+	return c.JSON(http.StatusOK, stats)
 }

@@ -5,6 +5,7 @@ import type {
   JobResponse,
   Environment,
   ErrorResponse,
+  WorkerStats,
 } from '../types/api'
 
 // API client configuration
@@ -175,6 +176,22 @@ export async function checkHealth(): Promise<{ status: string }> {
   } catch (error) {
     if (axios.isAxiosError(error)) {
       throw new Error('API server is not available')
+    }
+    throw error
+  }
+}
+
+/**
+ * Get worker pool statistics
+ * GET /api/v1/workers/stats
+ */
+export async function getWorkerStats(): Promise<WorkerStats> {
+  try {
+    const response = await apiClient.get<WorkerStats>('/workers/stats')
+    return response.data
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.data) {
+      throw new Error(error.response.data.message || error.response.data.error)
     }
     throw error
   }

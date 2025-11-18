@@ -3,6 +3,7 @@ import { CodeEditor } from '@/components/CodeEditor'
 import { EnvironmentSelector } from '@/components/EnvironmentSelector'
 import { CompilerOutput } from '@/components/CompilerOutput'
 import { StatusBar } from '@/components/StatusBar'
+import { WorkerPoolStatus } from '@/components/WorkerPoolStatus'
 import { useCompilation } from '../hooks/useCompilation'
 import {
   Language,
@@ -200,6 +201,9 @@ export function Home() {
       {/* Main Content */}
       <main className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
+          {/* Worker Pool Status */}
+          <WorkerPoolStatus autoRefresh={true} refreshInterval={2000} />
+
           {/* Security Warning */}
           {securityWarning && (
             <Alert variant="warning">
