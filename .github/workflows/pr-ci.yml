@@ -15,8 +15,32 @@ env:
   GO_VERSION: '1.25'
 
 jobs:
+  # Detect what files changed to run appropriate jobs
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v5
+
+      - name: Detect file changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - '**'
+              - '!web/**'
+            frontend:
+              - 'web/**'
+
   lint:
     name: Lint
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -32,6 +56,8 @@ jobs:
 
   unit-test:
     name: Unit Test
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -53,6 +79,8 @@ jobs:
 
   integration-test:
     name: Integration Test
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -75,6 +103,8 @@ jobs:
 
   build:
     name: Build
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -101,6 +131,8 @@ jobs:
 
   docker-build:
     name: Docker Build
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -124,3 +156,82 @@ jobs:
         run: |
           docker images
           docker images | grep will-it-compile-api
+
+  frontend-type-check:
+    name: Frontend Type Check
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v5
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: cd web && pnpm install --frozen-lockfile
+
+      - name: Run type check
+        run: cd web && pnpm type-check
+
+  # This is the ONLY required check in GitHub branch protection
+  # All other jobs are dependencies of this job
+  all-checks-pass:
+    name: All Checks Pass
+    runs-on: ubuntu-latest
+    needs: [changes, lint, unit-test, integration-test, build, docker-build, frontend-type-check]
+    if: always()  # Run even if some jobs are skipped
+    steps:
+      - name: Verify all required jobs succeeded
+        run: |
+          # Get all job results
+          CHANGES_RESULT="${{ needs.changes.result }}"
+          LINT_RESULT="${{ needs.lint.result }}"
+          UNIT_TEST_RESULT="${{ needs.unit-test.result }}"
+          INTEGRATION_TEST_RESULT="${{ needs.integration-test.result }}"
+          BUILD_RESULT="${{ needs.build.result }}"
+          DOCKER_BUILD_RESULT="${{ needs.docker-build.result }}"
+          FRONTEND_TYPE_CHECK_RESULT="${{ needs.frontend-type-check.result }}"
+
+          echo "Job Results:"
+          echo "  changes: $CHANGES_RESULT"
+          echo "  lint: $LINT_RESULT"
+          echo "  unit-test: $UNIT_TEST_RESULT"
+          echo "  integration-test: $INTEGRATION_TEST_RESULT"
+          echo "  build: $BUILD_RESULT"
+          echo "  docker-build: $DOCKER_BUILD_RESULT"
+          echo "  frontend-type-check: $FRONTEND_TYPE_CHECK_RESULT"
+
+          # Check if any required job failed
+          if [[ "$CHANGES_RESULT" == "failure" ]] || \
+             [[ "$LINT_RESULT" == "failure" ]] || \
+             [[ "$UNIT_TEST_RESULT" == "failure" ]] || \
+             [[ "$INTEGRATION_TEST_RESULT" == "failure" ]] || \
+             [[ "$BUILD_RESULT" == "failure" ]] || \
+             [[ "$DOCKER_BUILD_RESULT" == "failure" ]] || \
+             [[ "$FRONTEND_TYPE_CHECK_RESULT" == "failure" ]]; then
+            echo "❌ One or more required jobs failed"
+            exit 1
+          fi
+
+          # Check if any required job was cancelled
+          if [[ "$CHANGES_RESULT" == "cancelled" ]] || \
+             [[ "$LINT_RESULT" == "cancelled" ]] || \
+             [[ "$UNIT_TEST_RESULT" == "cancelled" ]] || \
+             [[ "$INTEGRATION_TEST_RESULT" == "cancelled" ]] || \
+             [[ "$BUILD_RESULT" == "cancelled" ]] || \
+             [[ "$DOCKER_BUILD_RESULT" == "cancelled" ]] || \
+             [[ "$FRONTEND_TYPE_CHECK_RESULT" == "cancelled" ]]; then
+            echo "❌ One or more required jobs was cancelled"
+            exit 1
+          fi
+
+          echo "✅ All required jobs passed or were appropriately skipped"
