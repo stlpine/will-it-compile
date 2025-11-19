@@ -65,16 +65,13 @@ env:
     value: "debug"
 
 # Redis Configuration (Development)
+# Ephemeral in-memory cache - data lost on pod restart
 redis:
   enabled: true  # Set to false to use in-memory storage for local testing
   image:
     repository: redis
     tag: "7-alpine"
     pullPolicy: IfNotPresent
-
-  # Persistence - DISABLED for development (faster, ephemeral)
-  persistence:
-    enabled: false
 
   # Authentication - DISABLED for development
   auth:

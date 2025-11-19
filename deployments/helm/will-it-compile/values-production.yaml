@@ -141,18 +141,13 @@ affinity:
 #     effect: "NoSchedule"
 
 # Redis Configuration (Production)
+# Ephemeral in-memory cache - data lost on pod restart
 redis:
   enabled: true
   image:
     repository: redis
     tag: "7-alpine"
     pullPolicy: IfNotPresent
-
-  # Persistence - ENABLED for production
-  persistence:
-    enabled: true
-    size: 20Gi  # Larger storage for production
-    storageClass: ""  # Use default or specify cloud-specific (e.g., "gp3" for AWS)
 
   # Authentication - ENABLED for production
   auth:

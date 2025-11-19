@@ -35,7 +35,7 @@ spec:
           - sh
           - -c
           - |
-            until redis-cli -h {{ include "will-it-compile.fullname" . }}-redis-client {{- if .Values.redis.auth.enabled }} -a $REDIS_PASSWORD {{- end }} ping | grep -q PONG; do
+            until redis-cli -h {{ include "will-it-compile.fullname" . }}-redis {{- if .Values.redis.auth.enabled }} -a $REDIS_PASSWORD {{- end }} ping | grep -q PONG; do
               echo "Waiting for Redis to be ready..."
               sleep 2
             done
@@ -72,7 +72,7 @@ spec:
         - name: REDIS_ENABLED
           value: "true"
         - name: REDIS_ADDR
-          value: "{{ include "will-it-compile.fullname" . }}-redis-client:6379"
+          value: "{{ include "will-it-compile.fullname" . }}-redis:6379"
         {{- if .Values.redis.auth.enabled }}
         - name: REDIS_PASSWORD
           valueFrom:

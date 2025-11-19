@@ -12,21 +12,24 @@ This guide covers deploying will-it-compile to both local development and produc
 
 ### Redis Storage
 
-The Helm chart includes **built-in Redis support** for persistent job storage. This is enabled by default and provides:
+The Helm chart includes **built-in Redis support** for shared job storage. This is enabled by default and provides:
 
-- ✅ **Persistent storage**: Jobs survive pod restarts
-- ✅ **Horizontal scaling**: Multiple API instances share job state
-- ✅ **Production ready**: Automatic TTL cleanup and connection pooling
+- ✅ **Shared cache**: Multiple API instances can share job state
+- ✅ **Horizontal scaling**: Deploy multiple replicas
+- ✅ **Automatic cleanup**: TTL-based job expiration
+- ⚠️ **Ephemeral storage**: Data lost on pod restart (by design)
 
 **Configuration Options:**
 
-1. **Embedded Redis** (Default): Chart deploys Redis StatefulSet
-   - Development: Ephemeral storage (no persistence)
-   - Production: Persistent storage with authentication
+1. **Embedded Redis** (Default): Chart deploys Redis Deployment
+   - Ephemeral in-memory cache
+   - Data lost on pod restart/shutdown
+   - Good for horizontal scaling during uptime
 
-2. **In-Memory Mode**: Disable Redis for single-replica testing only
-   - Set `redis.enabled=false` in values-dev.yaml
-   - Not suitable for production or multi-replica deployments
+2. **In-Memory Mode**: Disable Redis entirely
+   - Set `redis.enabled=false` in values
+   - Each API pod has separate in-memory storage
+   - Only suitable for single-replica deployments
 
 See the **Redis Configuration** section below for details.
 
@@ -229,14 +232,18 @@ curl http://localhost:8080/health
 
 ### Embedded Redis
 
-The Helm chart deploys Redis as a StatefulSet with automatic configuration:
+The Helm chart deploys Redis as a **Deployment** (ephemeral cache):
+
+**Key Characteristics:**
+- ⚠️ **Data is NOT persistent** - Lost on pod restart/shutdown
+- ✅ **Good for horizontal scaling** - Multiple API pods share cache during uptime
+- ✅ **Simpler & faster** - No persistent volumes, faster pod restarts
+- ✅ **Zero storage costs** - No PersistentVolumeClaims
 
 **Development** (values-dev.yaml):
 ```yaml
 redis:
   enabled: true
-  persistence:
-    enabled: false  # Ephemeral storage
   auth:
     enabled: false  # No authentication
   resources:
@@ -249,9 +256,6 @@ redis:
 ```yaml
 redis:
   enabled: true
-  persistence:
-    enabled: true
-    size: 20Gi  # Persistent storage
   auth:
     enabled: true  # Password authentication (auto-generated)
   resources:
@@ -282,7 +286,7 @@ kubectl get pods -n will-it-compile -l app.kubernetes.io/component=redis
 kubectl logs -n will-it-compile -l app.kubernetes.io/component=redis
 
 # Test Redis connection (from API pod)
-kubectl exec -n will-it-compile -it <api-pod-name> -- sh -c 'redis-cli -h will-it-compile-redis-client ping'
+kubectl exec -n will-it-compile -it <api-pod-name> -- sh -c 'redis-cli -h will-it-compile-redis ping'
 
 # Retrieve Redis password (production with auth enabled)
 kubectl get secret will-it-compile-redis-secret -n will-it-compile -o jsonpath='{.data.password}' | base64 -d
@@ -305,8 +309,7 @@ redis:
 
 ⚠️ **Warning**: In-memory mode is NOT suitable for:
 - Production deployments
-- Multiple replicas (jobs won't be shared)
-- Long-running deployments (jobs lost on restart)
+- Multiple replicas (jobs won't be shared across pods)
 
 ### Redis Monitoring
 
@@ -328,9 +331,15 @@ kubectl exec -n will-it-compile -it <redis-pod-name> -- redis-cli
 kubectl logs -n will-it-compile -l app=will-it-compile | grep -i redis
 
 # Expected output on startup:
-# Initializing Redis job store at will-it-compile-redis-client:6379
+# Initializing Redis job store at will-it-compile-redis:6379
 # Redis job store initialized successfully (TTL: 24h0m0s)
 ```
+
+**Important Notes:**
+- Redis uses ephemeral storage (Deployment, not StatefulSet)
+- Data is lost when Redis pod restarts or is deleted
+- This is by design for simplicity and lower resource usage
+- Jobs are shared across API pods during uptime only
 
 ## Cloud-Specific Deployments
 

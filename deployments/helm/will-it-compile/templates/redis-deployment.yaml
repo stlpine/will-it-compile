@@ -1,13 +1,12 @@
 {{- if .Values.redis.enabled }}
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
   name: {{ include "will-it-compile.fullname" . }}-redis
   labels:
     {{- include "will-it-compile.labels" . | nindent 4 }}
     app.kubernetes.io/component: redis
 spec:
-  serviceName: {{ include "will-it-compile.fullname" . }}-redis
   replicas: 1
   selector:
     matchLabels:
@@ -39,12 +38,6 @@ spec:
           readOnlyRootFilesystem: false
         command:
           - redis-server
-          {{- if .Values.redis.persistence.enabled }}
-          - --appendonly
-          - "yes"
-          - --appendfsync
-          - "everysec"
-          {{- end }}
           {{- if .Values.redis.auth.enabled }}
           - --requirepass
           - "$(REDIS_PASSWORD)"
@@ -93,26 +86,4 @@ spec:
           failureThreshold: 3
         resources:
           {{- toYaml .Values.redis.resources | nindent 12 }}
-        volumeMounts:
-        {{- if .Values.redis.persistence.enabled }}
-        - name: redis-data
-          mountPath: /data
-        {{- end }}
-  {{- if .Values.redis.persistence.enabled }}
-  volumeClaimTemplates:
-  - metadata:
-      name: redis-data
-      labels:
-        {{- include "will-it-compile.labels" . | nindent 8 }}
-        app.kubernetes.io/component: redis
-    spec:
-      accessModes:
-        - ReadWriteOnce
-      {{- if .Values.redis.persistence.storageClass }}
-      storageClassName: {{ .Values.redis.persistence.storageClass }}
-      {{- end }}
-      resources:
-        requests:
-          storage: {{ .Values.redis.persistence.size }}
-  {{- end }}
 {{- end }}

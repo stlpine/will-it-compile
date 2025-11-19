@@ -161,18 +161,13 @@ podDisruptionBudget:
   minAvailable: 1
 
 # Redis Configuration
+# Ephemeral in-memory cache - data lost on pod restart
 redis:
   enabled: true
   image:
     repository: redis
     tag: "7-alpine"
     pullPolicy: IfNotPresent
-
-  # Persistence
-  persistence:
-    enabled: true
-    size: 10Gi
-    storageClass: ""  # Use default storage class
 
   # Authentication
   auth:
