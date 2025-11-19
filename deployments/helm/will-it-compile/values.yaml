@@ -146,8 +146,57 @@ networkPolicy:
       ports:
         - protocol: TCP
           port: 443
+    # Allow Redis communication (same namespace)
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: redis
+      ports:
+        - protocol: TCP
+          port: 6379
 
 # Pod Disruption Budget
 podDisruptionBudget:
   enabled: true
   minAvailable: 1
+
+# Redis Configuration
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: "7-alpine"
+    pullPolicy: IfNotPresent
+
+  # Persistence
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: ""  # Use default storage class
+
+  # Authentication
+  auth:
+    enabled: false
+    password: ""  # Leave empty to auto-generate
+
+  # Redis Configuration
+  database: 0
+  poolSize: 20
+  jobTTL: 24  # Hours
+  maxMemory: "256mb"
+  maxMemoryPolicy: "allkeys-lru"
+
+  # Resources
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Worker Pool Configuration
+workerPool:
+  enabled: true
+  maxWorkers: 5
+  queueSize: 100

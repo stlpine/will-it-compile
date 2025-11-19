@@ -10,6 +10,30 @@ This guide covers deploying will-it-compile to both local development and produc
 - `kubectl` configured to access your cluster
 - Compiler Docker images built and available
 
+### Redis Storage
+
+The Helm chart includes **built-in Redis support** for persistent job storage. This is enabled by default and provides:
+
+- ✅ **Persistent storage**: Jobs survive pod restarts
+- ✅ **Horizontal scaling**: Multiple API instances share job state
+- ✅ **Production ready**: Automatic TTL cleanup and connection pooling
+
+**Configuration Options:**
+
+1. **Embedded Redis** (Default): Chart deploys Redis StatefulSet
+   - Development: Ephemeral storage (no persistence)
+   - Production: Persistent storage with authentication
+
+2. **External Redis**: Use managed Redis service (AWS ElastiCache, GCP Memorystore, Azure Cache)
+   - Set `redis.enabled=false` in values
+   - Configure external connection via environment variables
+
+3. **In-Memory Mode**: Disable Redis for single-replica testing only
+   - Set `redis.enabled=false` in values-dev.yaml
+   - Not suitable for production or multi-replica deployments
+
+See the **Redis Configuration** section below for details.
+
 ### Compiler Images
 
 **Option 1: Use Official Docker Hub Images** (Recommended)
@@ -203,6 +227,161 @@ kubectl logs -n will-it-compile -l app=will-it-compile
 # Test health endpoint
 kubectl port-forward -n will-it-compile svc/will-it-compile 8080:80
 curl http://localhost:8080/health
+```
+
+## Redis Configuration
+
+### Option 1: Embedded Redis (Default)
+
+The Helm chart deploys Redis as a StatefulSet with automatic configuration:
+
+**Development** (values-dev.yaml):
+```yaml
+redis:
+  enabled: true
+  persistence:
+    enabled: false  # Ephemeral storage
+  auth:
+    enabled: false  # No authentication
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+```
+
+**Production** (values-production.yaml):
+```yaml
+redis:
+  enabled: true
+  persistence:
+    enabled: true
+    size: 20Gi  # Persistent storage
+  auth:
+    enabled: true  # Password authentication (auto-generated)
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+```
+
+**Deployment:**
+```bash
+# Development
+helm install will-it-compile ./deployments/helm/will-it-compile \
+  --namespace will-it-compile --create-namespace \
+  --values ./deployments/helm/will-it-compile/values-dev.yaml
+
+# Production
+helm install will-it-compile ./deployments/helm/will-it-compile \
+  --namespace will-it-compile --create-namespace \
+  --values ./deployments/helm/will-it-compile/values-production.yaml
+```
+
+**Verify Redis Deployment:**
+```bash
+# Check Redis pod
+kubectl get pods -n will-it-compile -l app.kubernetes.io/component=redis
+
+# Check Redis logs
+kubectl logs -n will-it-compile -l app.kubernetes.io/component=redis
+
+# Test Redis connection (from API pod)
+kubectl exec -n will-it-compile -it <api-pod-name> -- sh -c 'redis-cli -h will-it-compile-redis-client ping'
+
+# Retrieve Redis password (production with auth enabled)
+kubectl get secret will-it-compile-redis-secret -n will-it-compile -o jsonpath='{.data.password}' | base64 -d
+```
+
+### Option 2: External Redis (Managed Service)
+
+For production deployments, you may want to use a managed Redis service:
+
+**AWS ElastiCache:**
+```bash
+helm install will-it-compile ./deployments/helm/will-it-compile \
+  --namespace will-it-compile --create-namespace \
+  --values ./deployments/helm/will-it-compile/values-production.yaml \
+  --set redis.enabled=false \
+  --set-string env[10].name=REDIS_ENABLED \
+  --set-string env[10].value=true \
+  --set-string env[11].name=REDIS_ADDR \
+  --set-string env[11].value=your-elasticache.redis.amazonaws.com:6379 \
+  --set-string env[12].name=REDIS_PASSWORD \
+  --set-string env[12].valueFrom.secretKeyRef.name=redis-external-secret \
+  --set-string env[12].valueFrom.secretKeyRef.key=password
+```
+
+**GCP Memorystore:**
+```bash
+# Create secret for Redis password
+kubectl create secret generic redis-external-secret \
+  --namespace will-it-compile \
+  --from-literal=password=your-redis-password
+
+helm install will-it-compile ./deployments/helm/will-it-compile \
+  --namespace will-it-compile --create-namespace \
+  --values ./deployments/helm/will-it-compile/values-production.yaml \
+  --set redis.enabled=false \
+  --set-string env[10].name=REDIS_ENABLED \
+  --set-string env[10].value=true \
+  --set-string env[11].name=REDIS_ADDR \
+  --set-string env[11].value=10.0.0.3:6379
+```
+
+**Azure Cache for Redis:**
+```bash
+helm install will-it-compile ./deployments/helm/will-it-compile \
+  --namespace will-it-compile --create-namespace \
+  --values ./deployments/helm/will-it-compile/values-production.yaml \
+  --set redis.enabled=false \
+  --set-string env[10].name=REDIS_ENABLED \
+  --set-string env[10].value=true \
+  --set-string env[11].name=REDIS_ADDR \
+  --set-string env[11].value=your-cache.redis.cache.windows.net:6380
+```
+
+### Option 3: In-Memory Mode (Testing Only)
+
+For local testing with a single replica, you can disable Redis:
+
+```bash
+helm install will-it-compile ./deployments/helm/will-it-compile \
+  --namespace will-it-compile --create-namespace \
+  --values ./deployments/helm/will-it-compile/values-dev.yaml \
+  --set redis.enabled=false
+
+# Or in values-dev.yaml:
+redis:
+  enabled: false
+```
+
+⚠️ **Warning**: In-memory mode is NOT suitable for:
+- Production deployments
+- Multiple replicas (jobs won't be shared)
+- Long-running deployments (jobs lost on restart)
+
+### Redis Monitoring
+
+**Check Redis storage:**
+```bash
+# Connect to Redis CLI
+kubectl exec -n will-it-compile -it <redis-pod-name> -- redis-cli
+
+# Inside Redis CLI:
+> INFO memory
+> DBSIZE
+> KEYS job:*
+> TTL job:<job-id>
+> HGETALL job:<job-id>
+```
+
+**Monitor API logs for Redis:**
+```bash
+kubectl logs -n will-it-compile -l app=will-it-compile | grep -i redis
+
+# Expected output on startup:
+# Initializing Redis job store at will-it-compile-redis-client:6379
+# Redis job store initialized successfully (TTL: 24h0m0s)
 ```
 
 ## Cloud-Specific Deployments

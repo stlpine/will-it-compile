@@ -27,6 +27,35 @@ spec:
       serviceAccountName: {{ include "will-it-compile.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if .Values.redis.enabled }}
+      initContainers:
+      - name: wait-for-redis
+        image: "{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}"
+        command:
+          - sh
+          - -c
+          - |
+            until redis-cli -h {{ include "will-it-compile.fullname" . }}-redis-client {{- if .Values.redis.auth.enabled }} -a $REDIS_PASSWORD {{- end }} ping | grep -q PONG; do
+              echo "Waiting for Redis to be ready..."
+              sleep 2
+            done
+            echo "Redis is ready!"
+        {{- if .Values.redis.auth.enabled }}
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "will-it-compile.fullname" . }}-redis-secret
+              key: password
+        {{- end }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+              - ALL
+      {{- end }}
       containers:
       - name: {{ .Chart.Name }}
         securityContext:
@@ -39,6 +68,37 @@ spec:
           protocol: TCP
         env:
         {{- toYaml .Values.env | nindent 10 }}
+        {{- if .Values.redis.enabled }}
+        - name: REDIS_ENABLED
+          value: "true"
+        - name: REDIS_ADDR
+          value: "{{ include "will-it-compile.fullname" . }}-redis-client:6379"
+        {{- if .Values.redis.auth.enabled }}
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "will-it-compile.fullname" . }}-redis-secret
+              key: password
+        {{- else }}
+        - name: REDIS_PASSWORD
+          value: ""
+        {{- end }}
+        - name: REDIS_DB
+          value: "{{ .Values.redis.database }}"
+        - name: REDIS_POOL_SIZE
+          value: "{{ .Values.redis.poolSize }}"
+        - name: REDIS_JOB_TTL_HOURS
+          value: "{{ .Values.redis.jobTTL }}"
+        {{- else }}
+        - name: REDIS_ENABLED
+          value: "false"
+        {{- end }}
+        {{- if .Values.workerPool.enabled }}
+        - name: MAX_WORKERS
+          value: "{{ .Values.workerPool.maxWorkers }}"
+        - name: QUEUE_SIZE
+          value: "{{ .Values.workerPool.queueSize }}"
+        {{- end }}
         livenessProbe:
           httpGet:
             path: /health

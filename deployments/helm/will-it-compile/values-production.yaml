@@ -102,6 +102,14 @@ networkPolicy:
       ports:
         - protocol: TCP
           port: 443
+    # Redis communication (same namespace)
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: redis
+      ports:
+        - protocol: TCP
+          port: 6379
 
 podDisruptionBudget:
   enabled: true
@@ -131,3 +139,44 @@ affinity:
 #     operator: "Equal"
 #     value: "compilation"
 #     effect: "NoSchedule"
+
+# Redis Configuration (Production)
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: "7-alpine"
+    pullPolicy: IfNotPresent
+
+  # Persistence - ENABLED for production
+  persistence:
+    enabled: true
+    size: 20Gi  # Larger storage for production
+    storageClass: ""  # Use default or specify cloud-specific (e.g., "gp3" for AWS)
+
+  # Authentication - ENABLED for production
+  auth:
+    enabled: true
+    password: ""  # Auto-generated on first install (store securely!)
+
+  # Redis Configuration
+  database: 0
+  poolSize: 50  # Larger pool for production
+  jobTTL: 48  # 48 hours for production (longer retention)
+  maxMemory: "512mb"  # More memory for production
+  maxMemoryPolicy: "allkeys-lru"
+
+  # Resources - Production sizing
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+
+# Worker Pool Configuration (Production)
+workerPool:
+  enabled: true
+  maxWorkers: 20  # More workers for production
+  queueSize: 500  # Larger queue for production

@@ -1,0 +1,38 @@
+{{- if .Values.redis.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "will-it-compile.fullname" . }}-redis
+  labels:
+    {{- include "will-it-compile.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  type: ClusterIP
+  clusterIP: None  # Headless service for StatefulSet
+  ports:
+  - name: redis
+    port: 6379
+    targetPort: redis
+    protocol: TCP
+  selector:
+    {{- include "will-it-compile.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "will-it-compile.fullname" . }}-redis-client
+  labels:
+    {{- include "will-it-compile.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  type: ClusterIP
+  ports:
+  - name: redis
+    port: 6379
+    targetPort: redis
+    protocol: TCP
+  selector:
+    {{- include "will-it-compile.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+{{- end }}

@@ -63,3 +63,41 @@ env:
         fieldPath: metadata.namespace
   - name: LOG_LEVEL
     value: "debug"
+
+# Redis Configuration (Development)
+redis:
+  enabled: true  # Set to false to use in-memory storage for local testing
+  image:
+    repository: redis
+    tag: "7-alpine"
+    pullPolicy: IfNotPresent
+
+  # Persistence - DISABLED for development (faster, ephemeral)
+  persistence:
+    enabled: false
+
+  # Authentication - DISABLED for development
+  auth:
+    enabled: false
+
+  # Redis Configuration
+  database: 0
+  poolSize: 10  # Smaller pool for dev
+  jobTTL: 2  # 2 hours for dev (shorter retention)
+  maxMemory: "128mb"  # Less memory for dev
+  maxMemoryPolicy: "allkeys-lru"
+
+  # Resources - Minimal for dev
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+# Worker Pool Configuration (Development)
+workerPool:
+  enabled: true
+  maxWorkers: 2  # Fewer workers for dev
+  queueSize: 50  # Smaller queue for dev
