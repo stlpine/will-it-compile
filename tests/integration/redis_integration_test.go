@@ -95,9 +95,9 @@ func (s *RedisIntegrationSuite) TestRedisJobPersistence() {
 	job := models.CompilationJob{
 		ID: "persist-test-1",
 		Request: models.CompilationRequest{
-			SourceCode: "int main() { return 0; }",
-			Language:   "cpp",
-			Compiler:   "gcc-13",
+			Code:     "int main() { return 0; }",
+			Language: "cpp",
+			Compiler: "gcc-13",
 		},
 		Status:    models.StatusQueued,
 		CreatedAt: time.Now(),
@@ -116,7 +116,7 @@ func (s *RedisIntegrationSuite) TestRedisJobPersistence() {
 	retrieved, found := s.store.Get("persist-test-1")
 	assert.True(s.T(), found)
 	assert.Equal(s.T(), job.ID, retrieved.ID)
-	assert.Equal(s.T(), job.Request.SourceCode, retrieved.Request.SourceCode)
+	assert.Equal(s.T(), job.Request.Code, retrieved.Request.Code)
 }
 
 // TestRedisJobLifecycle tests the complete job lifecycle
@@ -125,9 +125,9 @@ func (s *RedisIntegrationSuite) TestRedisJobLifecycle() {
 	job := models.CompilationJob{
 		ID: "lifecycle-test-1",
 		Request: models.CompilationRequest{
-			SourceCode: "int main() { return 0; }",
-			Language:   "cpp",
-			Compiler:   "gcc-13",
+			Code:     "int main() { return 0; }",
+			Language: "cpp",
+			Compiler: "gcc-13",
 		},
 		Status:    models.StatusQueued,
 		CreatedAt: time.Now(),
@@ -190,9 +190,9 @@ func (s *RedisIntegrationSuite) TestRedisMultipleJobs() {
 		job := models.CompilationJob{
 			ID: fmt.Sprintf("multi-job-%d", i),
 			Request: models.CompilationRequest{
-				SourceCode: fmt.Sprintf("int main() { return %d; }", i),
-				Language:   "cpp",
-				Compiler:   "gcc-13",
+				Code:     fmt.Sprintf("int main() { return %d; }", i),
+				Language: "cpp",
+				Compiler: "gcc-13",
 			},
 			Status:    models.StatusQueued,
 			CreatedAt: time.Now(),
@@ -220,9 +220,9 @@ func (s *RedisIntegrationSuite) TestRedisTTL() {
 	job := models.CompilationJob{
 		ID: "ttl-test-1",
 		Request: models.CompilationRequest{
-			SourceCode: "int main() { return 0; }",
-			Language:   "cpp",
-			Compiler:   "gcc-13",
+			Code:     "int main() { return 0; }",
+			Language: "cpp",
+			Compiler: "gcc-13",
 		},
 		Status:    models.StatusQueued,
 		CreatedAt: time.Now(),
@@ -245,9 +245,9 @@ func (s *RedisIntegrationSuite) TestRedisFailedCompilation() {
 	job := models.CompilationJob{
 		ID: "failed-test-1",
 		Request: models.CompilationRequest{
-			SourceCode: "invalid code",
-			Language:   "cpp",
-			Compiler:   "gcc-13",
+			Code:     "invalid code",
+			Language: "cpp",
+			Compiler: "gcc-13",
 		},
 		Status:    models.StatusFailed,
 		CreatedAt: time.Now(),
@@ -297,9 +297,9 @@ func (s *RedisIntegrationSuite) TestRedisConcurrentAccess() {
 				job := models.CompilationJob{
 					ID: fmt.Sprintf("concurrent-%d-%d", goroutineID, i),
 					Request: models.CompilationRequest{
-						SourceCode: fmt.Sprintf("int main() { return %d; }", i),
-						Language:   "cpp",
-						Compiler:   "gcc-13",
+						Code:     fmt.Sprintf("int main() { return %d; }", i),
+						Language: "cpp",
+						Compiler: "gcc-13",
 					},
 					Status:    models.StatusQueued,
 					CreatedAt: time.Now(),

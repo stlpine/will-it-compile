@@ -36,9 +36,9 @@ func TestRedisStore_StoreAndGet(t *testing.T) {
 	job := models.CompilationJob{
 		ID: "test-job-1",
 		Request: models.CompilationRequest{
-			SourceCode: "int main() { return 0; }",
-			Language:   "cpp",
-			Compiler:   "gcc-13",
+			Code:     "int main() { return 0; }",
+			Language: "cpp",
+			Compiler: "gcc-13",
 		},
 		Status:    models.StatusQueued,
 		CreatedAt: time.Now(),
@@ -52,7 +52,7 @@ func TestRedisStore_StoreAndGet(t *testing.T) {
 	retrieved, found := store.Get("test-job-1")
 	assert.True(t, found)
 	assert.Equal(t, job.ID, retrieved.ID)
-	assert.Equal(t, job.Request.SourceCode, retrieved.Request.SourceCode)
+	assert.Equal(t, job.Request.Code, retrieved.Request.Code)
 	assert.Equal(t, job.Status, retrieved.Status)
 }
 
@@ -104,9 +104,9 @@ func TestRedisStore_UpdateJobStatus(t *testing.T) {
 	job := models.CompilationJob{
 		ID: "test-job-1",
 		Request: models.CompilationRequest{
-			SourceCode: "int main() { return 0; }",
-			Language:   "cpp",
-			Compiler:   "gcc-13",
+			Code:     "int main() { return 0; }",
+			Language: "cpp",
+			Compiler: "gcc-13",
 		},
 		Status:    models.StatusQueued,
 		CreatedAt: time.Now(),
@@ -154,9 +154,9 @@ func TestRedisStore_TTL(t *testing.T) {
 	job := models.CompilationJob{
 		ID: "test-job-ttl",
 		Request: models.CompilationRequest{
-			SourceCode: "int main() { return 0; }",
-			Language:   "cpp",
-			Compiler:   "gcc-13",
+			Code:     "int main() { return 0; }",
+			Language: "cpp",
+			Compiler: "gcc-13",
 		},
 		Status:    models.StatusQueued,
 		CreatedAt: time.Now(),
@@ -181,9 +181,9 @@ func TestRedisStore_FailedCompilation(t *testing.T) {
 	job := models.CompilationJob{
 		ID: "test-job-failed",
 		Request: models.CompilationRequest{
-			SourceCode: "invalid code",
-			Language:   "cpp",
-			Compiler:   "gcc-13",
+			Code:     "invalid code",
+			Language: "cpp",
+			Compiler: "gcc-13",
 		},
 		Status:    models.StatusFailed,
 		CreatedAt: time.Now(),

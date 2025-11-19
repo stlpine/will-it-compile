@@ -1,8 +1,8 @@
 module github.com/stlpine/will-it-compile
 
-go 1.25
+go 1.25.0
 
-toolchain go1.25.4
+toolchain go1.24.7
 
 require (
 	github.com/alicebob/miniredis/v2 v2.33.0
