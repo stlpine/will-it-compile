@@ -9,6 +9,8 @@ import (
 // jobStore provides in-memory storage for jobs (MVP only)
 // ⚠️ WARNING: This is not suitable for production with multiple instances.
 // Replace with Redis or database in Phase 3.
+// NOTE: This is kept for backward compatibility with existing tests.
+// New code should use internal/storage/memory.Store instead.
 type jobStore struct {
 	mu      sync.RWMutex
 	jobs    map[string]models.CompilationJob
@@ -24,10 +26,11 @@ func newJobStore() *jobStore {
 }
 
 // Store saves or updates a job.
-func (s *jobStore) Store(job models.CompilationJob) {
+func (s *jobStore) Store(job models.CompilationJob) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.jobs[job.ID] = job
+	return nil
 }
 
 // Get retrieves a job by ID.
@@ -39,10 +42,11 @@ func (s *jobStore) Get(jobID string) (models.CompilationJob, bool) {
 }
 
 // StoreResult saves a compilation result.
-func (s *jobStore) StoreResult(jobID string, result models.CompilationResult) {
+func (s *jobStore) StoreResult(jobID string, result models.CompilationResult) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.results[jobID] = result
+	return nil
 }
 
 // GetResult retrieves a compilation result by job ID.
@@ -51,4 +55,9 @@ func (s *jobStore) GetResult(jobID string) (models.CompilationResult, bool) {
 	defer s.mu.RUnlock()
 	result, exists := s.results[jobID]
 	return result, exists
+}
+
+// Close releases any resources (no-op for in-memory store).
+func (s *jobStore) Close() error {
+	return nil
 }
