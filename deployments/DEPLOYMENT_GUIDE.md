@@ -10,6 +10,29 @@ This guide covers deploying will-it-compile to both local development and produc
 - `kubectl` configured to access your cluster
 - Compiler Docker images built and available
 
+### Redis Storage
+
+The Helm chart includes **built-in Redis support** for shared job storage. This is enabled by default and provides:
+
+- ✅ **Shared cache**: Multiple API instances can share job state
+- ✅ **Horizontal scaling**: Deploy multiple replicas
+- ✅ **Automatic cleanup**: TTL-based job expiration
+- ⚠️ **Ephemeral storage**: Data lost on pod restart (by design)
+
+**Configuration Options:**
+
+1. **Embedded Redis** (Default): Chart deploys Redis Deployment
+   - Ephemeral in-memory cache
+   - Data lost on pod restart/shutdown
+   - Good for horizontal scaling during uptime
+
+2. **In-Memory Mode**: Disable Redis entirely
+   - Set `redis.enabled=false` in values
+   - Each API pod has separate in-memory storage
+   - Only suitable for single-replica deployments
+
+See the **Redis Configuration** section below for details.
+
 ### Compiler Images
 
 **Option 1: Use Official Docker Hub Images** (Recommended)
@@ -204,6 +227,119 @@ kubectl logs -n will-it-compile -l app=will-it-compile
 kubectl port-forward -n will-it-compile svc/will-it-compile 8080:80
 curl http://localhost:8080/health
 ```
+
+## Redis Configuration
+
+### Embedded Redis
+
+The Helm chart deploys Redis as a **Deployment** (ephemeral cache):
+
+**Key Characteristics:**
+- ⚠️ **Data is NOT persistent** - Lost on pod restart/shutdown
+- ✅ **Good for horizontal scaling** - Multiple API pods share cache during uptime
+- ✅ **Simpler & faster** - No persistent volumes, faster pod restarts
+- ✅ **Zero storage costs** - No PersistentVolumeClaims
+
+**Development** (values-dev.yaml):
+```yaml
+redis:
+  enabled: true
+  auth:
+    enabled: false  # No authentication
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+```
+
+**Production** (values-production.yaml):
+```yaml
+redis:
+  enabled: true
+  auth:
+    enabled: true  # Password authentication (auto-generated)
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+```
+
+**Deployment:**
+```bash
+# Development
+helm install will-it-compile ./deployments/helm/will-it-compile \
+  --namespace will-it-compile --create-namespace \
+  --values ./deployments/helm/will-it-compile/values-dev.yaml
+
+# Production
+helm install will-it-compile ./deployments/helm/will-it-compile \
+  --namespace will-it-compile --create-namespace \
+  --values ./deployments/helm/will-it-compile/values-production.yaml
+```
+
+**Verify Redis Deployment:**
+```bash
+# Check Redis pod
+kubectl get pods -n will-it-compile -l app.kubernetes.io/component=redis
+
+# Check Redis logs
+kubectl logs -n will-it-compile -l app.kubernetes.io/component=redis
+
+# Test Redis connection (from API pod)
+kubectl exec -n will-it-compile -it <api-pod-name> -- sh -c 'redis-cli -h will-it-compile-redis ping'
+
+# Retrieve Redis password (production with auth enabled)
+kubectl get secret will-it-compile-redis-secret -n will-it-compile -o jsonpath='{.data.password}' | base64 -d
+```
+
+### In-Memory Mode (Testing Only)
+
+For local testing with a single replica, you can disable Redis:
+
+```bash
+helm install will-it-compile ./deployments/helm/will-it-compile \
+  --namespace will-it-compile --create-namespace \
+  --values ./deployments/helm/will-it-compile/values-dev.yaml \
+  --set redis.enabled=false
+
+# Or in values-dev.yaml:
+redis:
+  enabled: false
+```
+
+⚠️ **Warning**: In-memory mode is NOT suitable for:
+- Production deployments
+- Multiple replicas (jobs won't be shared across pods)
+
+### Redis Monitoring
+
+**Check Redis storage:**
+```bash
+# Connect to Redis CLI
+kubectl exec -n will-it-compile -it <redis-pod-name> -- redis-cli
+
+# Inside Redis CLI:
+> INFO memory
+> DBSIZE
+> KEYS job:*
+> TTL job:<job-id>
+> HGETALL job:<job-id>
+```
+
+**Monitor API logs for Redis:**
+```bash
+kubectl logs -n will-it-compile -l app=will-it-compile | grep -i redis
+
+# Expected output on startup:
+# Initializing Redis job store at will-it-compile-redis:6379
+# Redis job store initialized successfully (TTL: 24h0m0s)
+```
+
+**Important Notes:**
+- Redis uses ephemeral storage (Deployment, not StatefulSet)
+- Data is lost when Redis pod restarts or is deleted
+- This is by design for simplicity and lower resource usage
+- Jobs are shared across API pods during uptime only
 
 ## Cloud-Specific Deployments
 
