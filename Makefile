@@ -71,12 +71,19 @@ docker-pull: ## Pull official compiler images for local testing
 	@echo "Pulling official compiler images..."
 	@echo "→ GCC (C/C++ - Debian-based)..."
 	@$(DOCKER) pull gcc:9
+	@$(DOCKER) pull gcc:10
 	@$(DOCKER) pull gcc:11
+	@$(DOCKER) pull gcc:12
 	@$(DOCKER) pull gcc:13
+	@echo "→ Clang (C/C++ - Alpine-based)..."
+	@$(DOCKER) pull silkeh/clang:17-alpine
 	@echo "→ Go (Alpine-based)..."
+	@$(DOCKER) pull golang:1.20-alpine
+	@$(DOCKER) pull golang:1.21-alpine
 	@$(DOCKER) pull golang:1.22-alpine
 	@$(DOCKER) pull golang:1.23-alpine
 	@echo "→ Rust (Alpine-based)..."
+	@$(DOCKER) pull rust:1.70-alpine
 	@$(DOCKER) pull rust:1.75-alpine
 	@$(DOCKER) pull rust:1.80-alpine
 	@echo "✓ All compiler images pulled"
@@ -85,9 +92,10 @@ docker-build: docker-pull ## Pull compiler images (alias for backward compatibil
 
 docker-clean: ## Remove Docker images
 	@echo "Removing official compiler images..."
-	@$(DOCKER) rmi gcc:9 gcc:11 gcc:13 || true
-	@$(DOCKER) rmi golang:1.22-alpine golang:1.23-alpine || true
-	@$(DOCKER) rmi rust:1.75-alpine rust:1.80-alpine || true
+	@$(DOCKER) rmi gcc:9 gcc:10 gcc:11 gcc:12 gcc:13 || true
+	@$(DOCKER) rmi silkeh/clang:17-alpine || true
+	@$(DOCKER) rmi golang:1.20-alpine golang:1.21-alpine golang:1.22-alpine golang:1.23-alpine || true
+	@$(DOCKER) rmi rust:1.70-alpine rust:1.75-alpine rust:1.80-alpine || true
 	@echo "✓ Cleanup complete"
 
 docker-test: docker-pull ## Test Docker image with official GCC
