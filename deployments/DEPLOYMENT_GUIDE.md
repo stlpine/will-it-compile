@@ -24,11 +24,7 @@ The Helm chart includes **built-in Redis support** for persistent job storage. T
    - Development: Ephemeral storage (no persistence)
    - Production: Persistent storage with authentication
 
-2. **External Redis**: Use managed Redis service (AWS ElastiCache, GCP Memorystore, Azure Cache)
-   - Set `redis.enabled=false` in values
-   - Configure external connection via environment variables
-
-3. **In-Memory Mode**: Disable Redis for single-replica testing only
+2. **In-Memory Mode**: Disable Redis for single-replica testing only
    - Set `redis.enabled=false` in values-dev.yaml
    - Not suitable for production or multi-replica deployments
 
@@ -231,7 +227,7 @@ curl http://localhost:8080/health
 
 ## Redis Configuration
 
-### Option 1: Embedded Redis (Default)
+### Embedded Redis
 
 The Helm chart deploys Redis as a StatefulSet with automatic configuration:
 
@@ -292,55 +288,7 @@ kubectl exec -n will-it-compile -it <api-pod-name> -- sh -c 'redis-cli -h will-i
 kubectl get secret will-it-compile-redis-secret -n will-it-compile -o jsonpath='{.data.password}' | base64 -d
 ```
 
-### Option 2: External Redis (Managed Service)
-
-For production deployments, you may want to use a managed Redis service:
-
-**AWS ElastiCache:**
-```bash
-helm install will-it-compile ./deployments/helm/will-it-compile \
-  --namespace will-it-compile --create-namespace \
-  --values ./deployments/helm/will-it-compile/values-production.yaml \
-  --set redis.enabled=false \
-  --set-string env[10].name=REDIS_ENABLED \
-  --set-string env[10].value=true \
-  --set-string env[11].name=REDIS_ADDR \
-  --set-string env[11].value=your-elasticache.redis.amazonaws.com:6379 \
-  --set-string env[12].name=REDIS_PASSWORD \
-  --set-string env[12].valueFrom.secretKeyRef.name=redis-external-secret \
-  --set-string env[12].valueFrom.secretKeyRef.key=password
-```
-
-**GCP Memorystore:**
-```bash
-# Create secret for Redis password
-kubectl create secret generic redis-external-secret \
-  --namespace will-it-compile \
-  --from-literal=password=your-redis-password
-
-helm install will-it-compile ./deployments/helm/will-it-compile \
-  --namespace will-it-compile --create-namespace \
-  --values ./deployments/helm/will-it-compile/values-production.yaml \
-  --set redis.enabled=false \
-  --set-string env[10].name=REDIS_ENABLED \
-  --set-string env[10].value=true \
-  --set-string env[11].name=REDIS_ADDR \
-  --set-string env[11].value=10.0.0.3:6379
-```
-
-**Azure Cache for Redis:**
-```bash
-helm install will-it-compile ./deployments/helm/will-it-compile \
-  --namespace will-it-compile --create-namespace \
-  --values ./deployments/helm/will-it-compile/values-production.yaml \
-  --set redis.enabled=false \
-  --set-string env[10].name=REDIS_ENABLED \
-  --set-string env[10].value=true \
-  --set-string env[11].name=REDIS_ADDR \
-  --set-string env[11].value=your-cache.redis.cache.windows.net:6380
-```
-
-### Option 3: In-Memory Mode (Testing Only)
+### In-Memory Mode (Testing Only)
 
 For local testing with a single replica, you can disable Redis:
 
