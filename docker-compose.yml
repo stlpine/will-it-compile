@@ -1,4 +1,23 @@
 services:
+  # Redis (Job Storage)
+  # Provides persistent storage for compilation jobs
+  redis:
+    image: redis:7-alpine
+    container_name: will-it-compile-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - will-it-compile
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
   # API Server (Go)
   # Uses Dockerfile.dev which runs as root for Docker socket access
   # Production uses Dockerfile (non-root) with Kubernetes Jobs API
@@ -12,6 +31,14 @@ services:
     environment:
       - PORT=8080
       - LOG_LEVEL=debug
+      - REDIS_ENABLED=true
+      - REDIS_ADDR=redis:6379
+      - REDIS_PASSWORD=
+      - REDIS_DB=0
+      - REDIS_POOL_SIZE=20
+      - REDIS_JOB_TTL_HOURS=24
+      - MAX_WORKERS=5
+      - QUEUE_SIZE=100
     volumes:
       # Mount Docker socket for container orchestration
       - /var/run/docker.sock:/var/run/docker.sock
@@ -22,6 +49,9 @@ services:
       - ./configs:/app/configs
     networks:
       - will-it-compile
+    depends_on:
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "-O", "/dev/null", "http://localhost:8080/health"]
@@ -60,3 +90,7 @@ services:
 networks:
   will-it-compile:
     driver: bridge
+
+volumes:
+  redis-data:
+    driver: local
