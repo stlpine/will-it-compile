@@ -785,13 +785,44 @@ const MaxSourceSize = 1 * 1024 * 1024
 ### Unit Tests
 - Test business logic in isolation
 - Mock Docker client for compiler tests
+- **Redis tests use miniredis** (in-memory mock)
 - Fast, no external dependencies
+- Run in all environments
 
 ### Integration Tests
-- Test full flow with real Docker
+- Test full flow with real Docker and Redis
 - Located in `tests/integration/`
 - Run with: `go test -v ./tests/integration/`
-- Skip in CI with: `go test -short` (checks `testing.Short()`)
+- **Redis integration tests auto-skip if Redis unavailable** (local dev)
+- **Always run in CI** with Redis service container
+
+### Two-Tier Redis Testing Strategy
+
+**Unit Tests** (`internal/storage/redis/store_test.go`):
+- Use `miniredis` - in-memory Redis mock
+- Fast execution (~100ms)
+- No external dependencies
+- Perfect for TDD
+
+**Integration Tests** (`tests/integration/redis_integration_test.go`):
+- Use **real Redis instance**
+- Verify persistence, TTL, concurrent access
+- Auto-skip if Redis unavailable locally
+- Required in CI (GitHub Actions provides Redis service)
+
+**Running Redis Tests:**
+```bash
+# Unit tests (no Redis needed)
+go test ./internal/storage/redis/
+
+# Integration tests (with Redis)
+docker compose up redis -d
+REDIS_ADDR=localhost:6379 go test -v ./tests/integration/
+
+# Integration tests (without Redis - will skip)
+go test -v ./tests/integration/
+# Output: "Redis not available. Skipping Redis integration tests."
+```
 
 ### Manual Testing
 - Use `scripts/test-api.sh` for end-to-end testing
@@ -1058,15 +1089,25 @@ go test -short ./...
 ```
 
 **Test Files**:
+
+*Integration Tests* (require Docker, Redis optional):
 - `tests/integration/api_test.go` - Basic integration tests with testify assertions
 - `tests/integration/api_suite_test.go` - Suite-based integration tests
 - `tests/integration/async_compile_test.go` - Async compilation with virtualized time (Go 1.25+)
 - `tests/integration/table_driven_test.go` - Comprehensive table-driven scenarios
+- `tests/integration/redis_integration_test.go` - **Redis integration tests with real Redis** (auto-skips if unavailable)
+
+*Unit Tests* (no external dependencies):
 - `internal/api/async_job_test.go` - Async job processing unit tests with virtualized time (Go 1.25+)
 - `internal/compiler/compiler_test.go` - Unit tests for compiler with Docker mocks
-- `internal/compiler/interface.go` - CompilerInterface for dependency injection and mocking
+- `internal/storage/redis/store_test.go` - **Redis storage unit tests with miniredis** (in-memory mock)
 - `internal/docker/mock_test.go` - Mock Docker client implementation
+
+*Test Infrastructure*:
+- `internal/compiler/interface.go` - CompilerInterface for dependency injection and mocking
 - `internal/docker/interface.go` - DockerClient interface for dependency injection
+- `internal/storage/interface.go` - JobStore interface for storage abstraction
+- `tests/integration/README.md` - Integration test documentation
 
 ## Git Workflow
 

@@ -197,35 +197,91 @@ See `deployments/helm/` for Helm chart with Redis StatefulSet.
 
 ## Testing
 
-### Unit Tests
+The project uses a **two-tier testing strategy** for Redis:
 
-Tests use `miniredis` (in-memory Redis mock):
+1. **Unit Tests** - Use `miniredis` (in-memory mock) for fast, isolated tests
+2. **Integration Tests** - Use real Redis for end-to-end validation
 
+### Unit Tests (Fast, No External Dependencies)
+
+Unit tests use `miniredis` - an in-memory Redis implementation that runs entirely in Go:
+
+**Location:** `internal/storage/redis/store_test.go`
+
+**Features:**
+- ✅ No external Redis required
+- ✅ Fast execution (~100ms for full suite)
+- ✅ Runs in CI without services
+- ✅ Perfect for TDD and rapid development
+
+**Run Locally:**
 ```bash
-# Run Redis storage tests
+# Run Redis storage unit tests
 go test ./internal/storage/redis/
 
-# Run all storage tests
+# Run all storage unit tests
 go test ./internal/storage/...
 
 # With coverage
 go test -cover ./internal/storage/redis/
 ```
 
-### Integration Tests
+### Integration Tests (Real Redis)
 
-Test with real Redis:
+Integration tests use a **real Redis instance** to verify production behavior:
 
+**Location:** `tests/integration/redis_integration_test.go`
+
+**Features:**
+- ✅ Tests actual Redis connection
+- ✅ Verifies persistence across restarts
+- ✅ Tests concurrent access patterns
+- ✅ Validates TTL behavior
+- ✅ Gracefully skips if Redis unavailable (local dev)
+
+**Run Locally:**
 ```bash
-# Start Redis
-docker run -d -p 6379:6379 redis:7-alpine
+# Option 1: Using Docker Compose
+docker compose up redis -d
+REDIS_ADDR=localhost:6379 go test -v ./tests/integration/
 
-# Run tests
-REDIS_ENABLED=true go test -v ./tests/integration/
+# Option 2: Using standalone Redis
+docker run -d -p 6379:6379 --name test-redis redis:7-alpine
+REDIS_ADDR=localhost:6379 go test -v ./tests/integration/
+docker stop test-redis && docker rm test-redis
 
-# Clean up
-docker stop $(docker ps -q --filter ancestor=redis:7-alpine)
+# Tests will skip gracefully if Redis is not available
+go test -v ./tests/integration/
+# Output: "Redis not available at localhost:6379. Skipping Redis integration tests."
 ```
+
+**Run in CI (GitHub Actions):**
+
+Integration tests automatically run with Redis in CI. The workflow includes a Redis service container:
+
+```yaml
+services:
+  redis:
+    image: redis:7-alpine
+    options: >-
+      --health-cmd "redis-cli ping"
+      --health-interval 10s
+    ports:
+      - 6379:6379
+```
+
+The `REDIS_ADDR` environment variable is automatically set to `localhost:6379` in the workflow.
+
+**Test Coverage:**
+
+Integration tests verify:
+- Job persistence across storage operations
+- Complete job lifecycle (queued → processing → completed)
+- Multiple concurrent job storage
+- TTL expiration settings
+- Failed compilation handling
+- Concurrent access from multiple goroutines (race conditions)
+- Connection failure handling
 
 ### Manual Testing
 
