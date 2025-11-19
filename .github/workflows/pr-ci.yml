@@ -110,10 +110,6 @@ jobs:
         run: |
           docker pull gcc:9
 
-      - name: Verify Redis connection
-        run: |
-          redis-cli -h localhost -p 6379 ping
-
       - name: Run integration tests
         env:
           REDIS_ADDR: localhost:6379
