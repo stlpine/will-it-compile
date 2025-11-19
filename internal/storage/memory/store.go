@@ -1,4 +1,4 @@
-package api
+package memory
 
 import (
 	"sync"
@@ -6,27 +6,25 @@ import (
 	"github.com/stlpine/will-it-compile/pkg/models"
 )
 
-// jobStore provides in-memory storage for jobs (MVP only)
+// Store provides in-memory storage for jobs.
 // ⚠️ WARNING: This is not suitable for production with multiple instances.
-// Replace with Redis or database in Phase 3.
-// NOTE: This is kept for backward compatibility with existing tests.
-// New code should use internal/storage/memory.Store instead.
-type jobStore struct {
+// Use Redis storage for production deployments.
+type Store struct {
 	mu      sync.RWMutex
 	jobs    map[string]models.CompilationJob
 	results map[string]models.CompilationResult
 }
 
-// newJobStore creates a new in-memory job store.
-func newJobStore() *jobStore {
-	return &jobStore{
+// NewStore creates a new in-memory job store.
+func NewStore() *Store {
+	return &Store{
 		jobs:    make(map[string]models.CompilationJob),
 		results: make(map[string]models.CompilationResult),
 	}
 }
 
 // Store saves or updates a job.
-func (s *jobStore) Store(job models.CompilationJob) error {
+func (s *Store) Store(job models.CompilationJob) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.jobs[job.ID] = job
@@ -34,7 +32,7 @@ func (s *jobStore) Store(job models.CompilationJob) error {
 }
 
 // Get retrieves a job by ID.
-func (s *jobStore) Get(jobID string) (models.CompilationJob, bool) {
+func (s *Store) Get(jobID string) (models.CompilationJob, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	job, exists := s.jobs[jobID]
@@ -42,7 +40,7 @@ func (s *jobStore) Get(jobID string) (models.CompilationJob, bool) {
 }
 
 // StoreResult saves a compilation result.
-func (s *jobStore) StoreResult(jobID string, result models.CompilationResult) error {
+func (s *Store) StoreResult(jobID string, result models.CompilationResult) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.results[jobID] = result
@@ -50,14 +48,14 @@ func (s *jobStore) StoreResult(jobID string, result models.CompilationResult) er
 }
 
 // GetResult retrieves a compilation result by job ID.
-func (s *jobStore) GetResult(jobID string) (models.CompilationResult, bool) {
+func (s *Store) GetResult(jobID string) (models.CompilationResult, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	result, exists := s.results[jobID]
 	return result, exists
 }
 
-// Close releases any resources (no-op for in-memory store).
-func (s *jobStore) Close() error {
+// Close releases any resources (no-op for memory store).
+func (s *Store) Close() error {
 	return nil
 }

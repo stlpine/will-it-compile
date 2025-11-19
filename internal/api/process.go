@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"github.com/stlpine/will-it-compile/pkg/models"
@@ -14,7 +15,11 @@ func (s *Server) processJob(job models.CompilationJob) {
 	job.Status = models.StatusProcessing
 	now := time.Now()
 	job.StartedAt = &now
-	s.jobs.Store(job)
+
+	if err := s.jobs.Store(job); err != nil {
+		log.Printf("Failed to update job %s to processing status: %v", job.ID, err)
+		// Continue processing despite storage error
+	}
 
 	// Compile the code
 	result := s.compiler.Compile(context.Background(), job)
@@ -29,8 +34,12 @@ func (s *Server) processJob(job models.CompilationJob) {
 		job.Status = models.StatusCompleted
 	}
 
-	s.jobs.Store(job)
+	if err := s.jobs.Store(job); err != nil {
+		log.Printf("Failed to update job %s to final status: %v", job.ID, err)
+	}
 
 	// Store the compilation result
-	s.jobs.StoreResult(job.ID, result)
+	if err := s.jobs.StoreResult(job.ID, result); err != nil {
+		log.Printf("Failed to store result for job %s: %v", job.ID, err)
+	}
 }

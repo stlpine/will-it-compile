@@ -2,19 +2,22 @@ package api
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/stlpine/will-it-compile/internal/compiler"
+	"github.com/stlpine/will-it-compile/internal/storage"
+	"github.com/stlpine/will-it-compile/internal/storage/memory"
 	"github.com/stlpine/will-it-compile/pkg/models"
 )
 
 // Server represents the API server.
 type Server struct {
 	compiler   compiler.CompilerInterface
-	jobs       *jobStore
+	jobs       storage.JobStore
 	workerPool *WorkerPool
 }
 
@@ -46,7 +49,26 @@ func NewServerWithConfig(config ServerConfig) (*Server, error) {
 
 	server := &Server{
 		compiler: comp,
-		jobs:     newJobStore(),
+		jobs:     memory.NewStore(),
+	}
+
+	// Create and start worker pool
+	server.workerPool = NewWorkerPool(config.MaxWorkers, config.QueueSize, server)
+	server.workerPool.Start()
+
+	return server, nil
+}
+
+// NewServerWithStorage creates a new API server instance with a custom storage implementation.
+func NewServerWithStorage(config ServerConfig, jobStore storage.JobStore) (*Server, error) {
+	comp, err := compiler.NewCompiler()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create compiler: %w", err)
+	}
+
+	server := &Server{
+		compiler: comp,
+		jobs:     jobStore,
 	}
 
 	// Create and start worker pool
@@ -61,6 +83,12 @@ func (s *Server) Close() error {
 	if s.workerPool != nil {
 		s.workerPool.Stop()
 	}
+
+	// Close storage
+	if err := s.jobs.Close(); err != nil {
+		log.Printf("Error closing job storage: %v", err)
+	}
+
 	return s.compiler.Close()
 }
 
@@ -91,7 +119,10 @@ func (s *Server) HandleCompile(c echo.Context) error {
 	}
 
 	// Store job
-	s.jobs.Store(job)
+	if err := s.jobs.Store(job); err != nil {
+		log.Printf("Failed to store job %s: %v", job.ID, err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to store job")
+	}
 
 	// Submit to worker pool
 	if !s.workerPool.Submit(job) {

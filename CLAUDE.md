@@ -401,14 +401,31 @@ Sample malicious code in: `tests/samples/` (create these for testing)
 
 ## Environment Variables
 
+### Server Configuration
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORT` | `8080` | HTTP server port |
+| `ENVIRONMENT` | `development` | Environment (development/production) |
 
-Future additions:
-- `REDIS_URL` - For job queue (Phase 3)
-- `LOG_LEVEL` - Logging verbosity
-- `MAX_CONCURRENT_JOBS` - Worker pool size
+### Redis Configuration (Phase 3)
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `REDIS_ENABLED` | `false` | Enable Redis storage (set to `true` for production) |
+| `REDIS_ADDR` | `localhost:6379` | Redis server address |
+| `REDIS_PASSWORD` | `` | Redis password (optional) |
+| `REDIS_DB` | `0` | Redis database number (0-15) |
+| `REDIS_POOL_SIZE` | `20` | Connection pool size |
+| `REDIS_JOB_TTL_HOURS` | `24` | Time-to-live for jobs in hours |
+
+### Worker Pool Configuration
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MAX_WORKERS` | `5` | Number of concurrent workers |
+| `QUEUE_SIZE` | `100` | Job queue buffer size |
+
+### Future Additions
+- `LOG_LEVEL` - Logging verbosity (structured logging in Phase 3B)
+- `METRICS_ENABLED` - Enable Prometheus metrics (Phase 3B)
 
 ## Dependencies
 
@@ -416,13 +433,17 @@ Future additions:
 - `github.com/docker/docker@v28.5.2` - Docker client
 - `github.com/google/uuid@v1.6.0` - UUID generation
 - `github.com/labstack/echo/v4@v4.13.4` - HTTP web framework
+- `github.com/redis/go-redis/v9@v9.7.0` - Redis client (Phase 3)
 - `github.com/stretchr/testify@v1.11.1` - Testing toolkit (test dependency)
+- `github.com/alicebob/miniredis/v2@v2.33.0` - Redis mock for testing (test dependency)
 
 ### Why These Versions?
 - Docker v28.5.2: Latest stable with security patches
 - UUID v1.6.0: Latest stable
 - Echo v4.13.4: Latest v4 release, high-performance HTTP framework
+- Redis v9.7.0: Latest go-redis client with full Redis 7 support
 - Testify v1.11.1: Latest stable, industry-standard testing framework
+- miniredis v2.33.0: Latest in-memory Redis for fast unit testing
 
 ### Updating Dependencies
 ```bash
@@ -439,16 +460,24 @@ make test
 make docker-build
 ```
 
-## Known Limitations (MVP)
+## Known Limitations
 
+### Storage & Persistence
+- ~~**In-memory storage**: Jobs lost on restart~~ ✅ **SOLVED (Phase 3)**: Redis integration complete
+- **Redis storage** available via `REDIS_ENABLED=true` (default: in-memory for development)
+- See `docs/technical/REDIS_INTEGRATION.md` for Redis setup
+
+### Features
 1. **Single file compilation only**: No multi-file project support
-2. **In-memory storage**: Jobs lost on restart
-3. **No authentication**: Anonymous access with rate limiting only
-4. **No job queue**: Synchronous processing
-5. **One language**: C++ only (GCC 13)
-6. **No caching**: Each compilation runs fresh
-7. **No metrics**: Basic logging only
-8. **No web interface**: CLI and TUI only (web frontend planned)
+2. **No authentication**: Anonymous access with rate limiting only
+3. **No caching**: Each compilation runs fresh
+4. **No Prometheus metrics**: Basic logging only (structured logging planned)
+5. **No web interface**: CLI and TUI only (web frontend planned)
+
+### Scaling
+- ✅ **Horizontal scaling ready** with Redis storage
+- ⚠️ **Job queue**: Still uses in-memory Go channels (Redis Streams planned for Phase 3B)
+- ⚠️ **No leader election**: Background tasks not coordinated across instances
 
 See `docs/architecture/IMPLEMENTATION_PLAN.md` for Phase 2+ features.
 
@@ -756,13 +785,44 @@ const MaxSourceSize = 1 * 1024 * 1024
 ### Unit Tests
 - Test business logic in isolation
 - Mock Docker client for compiler tests
+- **Redis tests use miniredis** (in-memory mock)
 - Fast, no external dependencies
+- Run in all environments
 
 ### Integration Tests
-- Test full flow with real Docker
+- Test full flow with real Docker and Redis
 - Located in `tests/integration/`
 - Run with: `go test -v ./tests/integration/`
-- Skip in CI with: `go test -short` (checks `testing.Short()`)
+- **Redis integration tests auto-skip if Redis unavailable** (local dev)
+- **Always run in CI** with Redis service container
+
+### Two-Tier Redis Testing Strategy
+
+**Unit Tests** (`internal/storage/redis/store_test.go`):
+- Use `miniredis` - in-memory Redis mock
+- Fast execution (~100ms)
+- No external dependencies
+- Perfect for TDD
+
+**Integration Tests** (`tests/integration/redis_integration_test.go`):
+- Use **real Redis instance**
+- Verify persistence, TTL, concurrent access
+- Auto-skip if Redis unavailable locally
+- Required in CI (GitHub Actions provides Redis service)
+
+**Running Redis Tests:**
+```bash
+# Unit tests (no Redis needed)
+go test ./internal/storage/redis/
+
+# Integration tests (with Redis)
+docker compose up redis -d
+REDIS_ADDR=localhost:6379 go test -v ./tests/integration/
+
+# Integration tests (without Redis - will skip)
+go test -v ./tests/integration/
+# Output: "Redis not available. Skipping Redis integration tests."
+```
 
 ### Manual Testing
 - Use `scripts/test-api.sh` for end-to-end testing
@@ -1029,15 +1089,25 @@ go test -short ./...
 ```
 
 **Test Files**:
+
+*Integration Tests* (require Docker, Redis optional):
 - `tests/integration/api_test.go` - Basic integration tests with testify assertions
 - `tests/integration/api_suite_test.go` - Suite-based integration tests
 - `tests/integration/async_compile_test.go` - Async compilation with virtualized time (Go 1.25+)
 - `tests/integration/table_driven_test.go` - Comprehensive table-driven scenarios
+- `tests/integration/redis_integration_test.go` - **Redis integration tests with real Redis** (auto-skips if unavailable)
+
+*Unit Tests* (no external dependencies):
 - `internal/api/async_job_test.go` - Async job processing unit tests with virtualized time (Go 1.25+)
 - `internal/compiler/compiler_test.go` - Unit tests for compiler with Docker mocks
-- `internal/compiler/interface.go` - CompilerInterface for dependency injection and mocking
+- `internal/storage/redis/store_test.go` - **Redis storage unit tests with miniredis** (in-memory mock)
 - `internal/docker/mock_test.go` - Mock Docker client implementation
+
+*Test Infrastructure*:
+- `internal/compiler/interface.go` - CompilerInterface for dependency injection and mocking
 - `internal/docker/interface.go` - DockerClient interface for dependency injection
+- `internal/storage/interface.go` - JobStore interface for storage abstraction
+- `tests/integration/README.md` - Integration test documentation
 
 ## Git Workflow
 

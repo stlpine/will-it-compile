@@ -37,14 +37,14 @@ func TestJobStore_ConcurrentAccess(t *testing.T) {
 					Status:    models.StatusQueued,
 					CreatedAt: time.Now(),
 				}
-				store.Store(job)
+				_ = store.Store(job) //nolint:errcheck // test concurrency, errors not expected
 
 				// Read job (might not exist yet from other workers)
 				_, _ = store.Get(jobID)
 
 				// Update job status
 				job.Status = models.StatusProcessing
-				store.Store(job)
+				_ = store.Store(job) //nolint:errcheck // test concurrency, errors not expected
 
 				// Store result
 				result := models.CompilationResult{
@@ -52,7 +52,7 @@ func TestJobStore_ConcurrentAccess(t *testing.T) {
 					Compiled: true,
 					ExitCode: 0,
 				}
-				store.StoreResult(jobID, result)
+				_ = store.StoreResult(jobID, result) //nolint:errcheck // test concurrency, errors not expected
 
 				// Read result
 				_, _ = store.GetResult(jobID)
@@ -123,14 +123,14 @@ func TestJobStore_ReadWriteMix(t *testing.T) {
 						Status:    models.StatusProcessing,
 						CreatedAt: time.Now(),
 					}
-					store.Store(job)
+					_ = store.Store(job) //nolint:errcheck // test concurrency, errors not expected
 
 					result := models.CompilationResult{
 						Success:  counter%2 == 0,
 						Compiled: true,
 						ExitCode: counter,
 					}
-					store.StoreResult(jobID, result)
+					_ = store.StoreResult(jobID, result) //nolint:errcheck // test concurrency, errors not expected
 					counter++
 				}
 			}
@@ -178,7 +178,8 @@ func TestJobStore_EdgeCases(t *testing.T) {
 			test: func(t *testing.T) {
 				store := newJobStore()
 				job := models.CompilationJob{ID: "", Status: models.StatusQueued}
-				store.Store(job)
+				err := store.Store(job)
+				assert.NoError(t, err)
 				retrieved, exists := store.Get("")
 				assert.True(t, exists)
 				assert.Equal(t, "", retrieved.ID)
@@ -191,8 +192,10 @@ func TestJobStore_EdgeCases(t *testing.T) {
 				job1 := models.CompilationJob{ID: "test", Status: models.StatusQueued}
 				job2 := models.CompilationJob{ID: "test", Status: models.StatusCompleted}
 
-				store.Store(job1)
-				store.Store(job2)
+				err := store.Store(job1)
+				assert.NoError(t, err)
+				err = store.Store(job2)
+				assert.NoError(t, err)
 
 				retrieved, _ := store.Get("test")
 				assert.Equal(t, models.StatusCompleted, retrieved.Status)
@@ -203,7 +206,8 @@ func TestJobStore_EdgeCases(t *testing.T) {
 			test: func(t *testing.T) {
 				store := newJobStore()
 				result := models.CompilationResult{Success: true}
-				store.StoreResult("orphan", result)
+				err := store.StoreResult("orphan", result)
+				assert.NoError(t, err)
 
 				retrieved, exists := store.GetResult("orphan")
 				assert.True(t, exists)
@@ -230,7 +234,8 @@ func TestJobStore_UpdateSequence(t *testing.T) {
 	}
 
 	// Initial store
-	store.Store(job)
+	err := store.Store(job)
+	require.NoError(t, err)
 	retrieved, exists := store.Get(job.ID)
 	require.True(t, exists)
 	assert.Equal(t, models.StatusQueued, retrieved.Status)
@@ -240,7 +245,8 @@ func TestJobStore_UpdateSequence(t *testing.T) {
 	started := time.Now()
 	job.Status = models.StatusProcessing
 	job.StartedAt = &started
-	store.Store(job)
+	err = store.Store(job)
+	require.NoError(t, err)
 
 	retrieved, exists = store.Get(job.ID)
 	require.True(t, exists)
@@ -254,13 +260,15 @@ func TestJobStore_UpdateSequence(t *testing.T) {
 		ExitCode: 0,
 		Stdout:   "Success",
 	}
-	store.StoreResult(job.ID, result)
+	err = store.StoreResult(job.ID, result)
+	require.NoError(t, err)
 
 	// Update to completed
 	completed := time.Now()
 	job.Status = models.StatusCompleted
 	job.CompletedAt = &completed
-	store.Store(job)
+	err = store.Store(job)
+	require.NoError(t, err)
 
 	retrieved, exists = store.Get(job.ID)
 	require.True(t, exists)
