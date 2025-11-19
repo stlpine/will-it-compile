@@ -75,7 +75,6 @@ func (s *Store) Store(job models.CompilationJob) error {
 		"started_at":   startedAt,
 		"completed_at": completedAt,
 	}).Err()
-
 	if err != nil {
 		return fmt.Errorf("failed to store job %s: %w", job.ID, err)
 	}
@@ -144,7 +143,6 @@ func (s *Store) StoreResult(jobID string, result models.CompilationResult) error
 		"exit_code": result.ExitCode,
 		"duration":  result.Duration.Nanoseconds(),
 	}).Err()
-
 	if err != nil {
 		return fmt.Errorf("failed to store result for job %s: %w", jobID, err)
 	}
