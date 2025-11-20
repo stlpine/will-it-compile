@@ -30,16 +30,21 @@ func NewEchoServer(server *Server, withRateLimit bool) *echo.Echo {
 	// API routes
 	apiGroup := e.Group("/api/v1")
 
-	// Optional rate limiting (disabled for tests by default)
-	if withRateLimit {
-		rateLimiter := NewRateLimiter(10, time.Minute)
-		apiGroup.Use(RateLimitMiddleware(rateLimiter))
-	}
-
-	apiGroup.POST("/compile", server.HandleCompile)
-	apiGroup.GET("/compile/:job_id", server.HandleGetJob)
+	// Read-only endpoints (no rate limit - lightweight, frequently polled)
 	apiGroup.GET("/environments", server.HandleGetEnvironments)
 	apiGroup.GET("/workers/stats", server.HandleGetWorkerStats)
+	apiGroup.GET("/compile/:job_id", server.HandleGetJob)
+
+	// Compilation endpoint (with optional rate limiting)
+	// This is resource-intensive and should be rate-limited
+	if withRateLimit {
+		rateLimiter := NewRateLimiter(10, time.Minute)
+		compileGroup := apiGroup.Group("")
+		compileGroup.Use(RateLimitMiddleware(rateLimiter))
+		compileGroup.POST("/compile", server.HandleCompile)
+	} else {
+		apiGroup.POST("/compile", server.HandleCompile)
+	}
 
 	return e
 }
