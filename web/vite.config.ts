@@ -24,4 +24,39 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    // Enable minification
+    minify: 'esbuild',
+
+    // Target modern browsers for smaller bundles
+    target: 'es2020',
+
+    // Optimize chunks for better caching
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Separate vendor chunks for better caching
+          'react-vendor': ['react', 'react-dom'],
+          'monaco-vendor': ['@monaco-editor/react'],
+        },
+      },
+    },
+
+    // Reduce chunk size warning limit (500kb default is too high)
+    chunkSizeWarningLimit: 500,
+
+    // Enable CSS code splitting
+    cssCodeSplit: true,
+
+    // Generate sourcemaps for production debugging (can disable to save ~30% size)
+    sourcemap: false,
+
+    // Optimize asset inlining (inline small assets as base64)
+    assetsInlineLimit: 4096, // 4kb
+  },
+
+  // Optimize dependencies
+  optimizeDeps: {
+    include: ['react', 'react-dom', '@monaco-editor/react'],
+  },
 })
