@@ -80,8 +80,18 @@ ingress:
   hosts:
     - host: will-it-compile.example.com
       paths:
+        # API routes - handle all /api requests
+        - path: /api
+          pathType: Prefix
+          backend: api
+        # Health check endpoint
+        - path: /health
+          pathType: Prefix
+          backend: api
+        # Web frontend - handle all other requests (must be last)
         - path: /
           pathType: Prefix
+          backend: web
   tls: []
   #  - secretName: will-it-compile-tls
   #    hosts:
@@ -159,6 +169,57 @@ networkPolicy:
 podDisruptionBudget:
   enabled: true
   minAvailable: 1
+
+# Web Frontend Configuration
+web:
+  enabled: true
+  replicaCount: 2
+
+  image:
+    repository: stlpine/will-it-compile-web
+    pullPolicy: IfNotPresent
+    tag: "latest"
+
+  podAnnotations: {}
+
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 101  # nginx user
+    fsGroup: 101
+    seccompProfile:
+      type: RuntimeDefault
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    runAsUser: 101  # nginx user
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+
+  service:
+    type: ClusterIP
+    port: 80
+
+  resources:
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
 
 # Redis Configuration
 # Ephemeral in-memory cache - data lost on pod restart
