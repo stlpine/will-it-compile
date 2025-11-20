@@ -1,0 +1,19 @@
+{{- if .Values.web.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "will-it-compile.fullname" . }}-web
+  labels:
+    {{- include "will-it-compile.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+spec:
+  type: {{ .Values.web.service.type }}
+  ports:
+    - port: {{ .Values.web.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "will-it-compile.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+{{- end }}

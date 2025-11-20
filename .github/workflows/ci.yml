@@ -135,6 +135,21 @@ jobs:
           docker images
           docker images | grep will-it-compile-api
 
+      - name: Build web frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./web
+          file: ./web/Dockerfile
+          push: false
+          tags: stlpine/will-it-compile-web:test
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+          outputs: type=docker
+
+      - name: Verify web image
+        run: |
+          docker images | grep will-it-compile-web
+
   # CD: Push Docker images to Docker Hub after CI passes
   docker-push:
     name: Push to Docker Hub
@@ -174,11 +189,29 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Build and push web frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./web
+          file: ./web/Dockerfile
+          push: true
+          tags: |
+            stlpine/will-it-compile-web:latest
+            stlpine/will-it-compile-web:${{ steps.meta.outputs.sha_short }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
       - name: Image digest
         run: |
-          echo "✅ API image pushed successfully!"
-          echo "📦 stlpine/will-it-compile-api:latest"
-          echo "📦 stlpine/will-it-compile-api:${{ steps.meta.outputs.sha_short }}"
+          echo "✅ Images pushed successfully!"
+          echo ""
+          echo "📦 API Server:"
+          echo "   - stlpine/will-it-compile-api:latest"
+          echo "   - stlpine/will-it-compile-api:${{ steps.meta.outputs.sha_short }}"
+          echo ""
+          echo "📦 Web Frontend:"
+          echo "   - stlpine/will-it-compile-web:latest"
+          echo "   - stlpine/will-it-compile-web:${{ steps.meta.outputs.sha_short }}"
           echo ""
           echo "ℹ️  Compiler images: Using official Docker images"
           echo "   - gcc:9, gcc:11, gcc:13 (Debian-based)"
