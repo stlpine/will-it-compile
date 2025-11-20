@@ -29,11 +29,6 @@ environments:
         image: gcc:13
         standards: [c++11, c++14, c++17, c++20, c++23]
         architectures: [x86_64, arm64]
-      - name: clang
-        version: "17"
-        image: silkeh/clang:17-alpine
-        standards: [c++11, c++14, c++17, c++20, c++23]
-        architectures: [x86_64, arm64]
 
   # C with multiple GCC versions (official Debian-based images)
   - language: c
