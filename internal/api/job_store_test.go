@@ -85,7 +85,11 @@ func TestJobStore_ReadWriteMix(t *testing.T) {
 	const duration = 100 * time.Millisecond
 
 	done := make(chan struct{})
-	time.AfterFunc(duration, func() { close(done) })
+
+	// Ensure all writers have written at least once before starting the test
+	writersReady := make(chan struct{})
+	var readyWg sync.WaitGroup
+	readyWg.Add(numWriters)
 
 	var wg sync.WaitGroup
 
@@ -94,6 +98,8 @@ func TestJobStore_ReadWriteMix(t *testing.T) {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
+			// Wait for initial data to be written
+			<-writersReady
 			for {
 				select {
 				case <-done:
@@ -113,6 +119,27 @@ func TestJobStore_ReadWriteMix(t *testing.T) {
 			defer wg.Done()
 			jobID := fmt.Sprintf("job-%d", id)
 			counter := 0
+
+			// Write initial data
+			job := models.CompilationJob{
+				ID:        jobID,
+				Status:    models.StatusProcessing,
+				CreatedAt: time.Now(),
+			}
+			_ = store.Store(job) //nolint:errcheck // test concurrency, errors not expected
+
+			result := models.CompilationResult{
+				Success:  true,
+				Compiled: true,
+				ExitCode: 0,
+			}
+			_ = store.StoreResult(jobID, result) //nolint:errcheck // test concurrency, errors not expected
+			counter++
+
+			// Signal that this writer is ready
+			readyWg.Done()
+
+			// Continue with the stress test
 			for {
 				select {
 				case <-done:
@@ -137,17 +164,22 @@ func TestJobStore_ReadWriteMix(t *testing.T) {
 		}(i)
 	}
 
+	// Wait for all writers to write initial data, then start the timer
+	readyWg.Wait()
+	close(writersReady)
+	time.AfterFunc(duration, func() { close(done) })
+
 	wg.Wait()
 
 	// Verify final state is consistent
 	for i := 0; i < numWriters; i++ {
 		jobID := fmt.Sprintf("job-%d", i)
 		job, exists := store.Get(jobID)
-		assert.True(t, exists)
+		assert.True(t, exists, "Job %s should exist", jobID)
 		assert.Equal(t, jobID, job.ID)
 
 		_, hasResult := store.GetResult(jobID)
-		assert.True(t, hasResult)
+		assert.True(t, hasResult, "Result for %s should exist", jobID)
 	}
 }
 
