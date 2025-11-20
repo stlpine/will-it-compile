@@ -2,7 +2,11 @@
 
 // Enums
 export type Language = 'c' | 'cpp' | 'c++' | 'go' | 'rust'
-export type Compiler = 'gcc-13' | 'gcc-11' | 'gcc-9' | 'clang-15' | 'go' | 'rustc'
+export type Compiler =
+  | 'gcc-13' | 'gcc-12' | 'gcc-11' | 'gcc-10' | 'gcc-9'
+  | 'go-1.20' | 'go-1.21' | 'go-1.22' | 'go-1.23'
+  | 'rustc-1.70' | 'rustc-1.75' | 'rustc-1.80'
+  | 'clang-15'
 export type Standard =
   // C++ standards
   | 'c++11'
@@ -153,6 +157,7 @@ int main() {
     return 0;
 }`,
     compiler: 'gcc-13',
+    standard: 'c17',
     fileExtension: 'c',
   },
   go: {
@@ -165,7 +170,7 @@ import "fmt"
 func main() {
     fmt.Println("Hello, World!")
 }`,
-    compiler: 'go',
+    compiler: 'go-1.23',
     fileExtension: 'go',
   },
   rust: {
@@ -174,7 +179,42 @@ func main() {
     defaultCode: `fn main() {
     println!("Hello, World!");
 }`,
-    compiler: 'rustc',
+    compiler: 'rustc-1.80',
     fileExtension: 'rs',
   },
+}
+
+// Helper type for parsed compiler info
+export interface CompilerInfo {
+  id: Compiler
+  name: string
+  version: string
+  displayName: string
+}
+
+// Helper functions for parsing compiler information
+export function parseCompilerId(compilerId: string): CompilerInfo | null {
+  // Match patterns like "gcc-13", "go-1.23", "rustc-1.80"
+  const match = compilerId.match(/^([a-z]+)-(.+)$/)
+  if (!match) return null
+
+  const [, name, version] = match
+  return {
+    id: compilerId as Compiler,
+    name,
+    version,
+    displayName: `${name} ${version}`,
+  }
+}
+
+export function getCompilersForLanguage(
+  environments: Environment[],
+  language: Language
+): CompilerInfo[] {
+  const env = environments.find((e) => e.language === language)
+  if (!env) return []
+
+  return env.compilers
+    .map(parseCompilerId)
+    .filter((c): c is CompilerInfo => c !== null)
 }

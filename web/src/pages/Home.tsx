@@ -8,10 +8,13 @@ import { useCompilation } from '../hooks/useCompilation'
 import {
   Language,
   Standard,
+  Compiler,
+  Environment,
   LANGUAGE_CONFIGS,
   DEFAULT_ARCHITECTURE,
   DEFAULT_OS,
 } from '../types/api'
+import { getEnvironments } from '../services/api'
 import {
   Card,
   CardContent,
@@ -43,10 +46,12 @@ import {
  */
 export function Home() {
   const [language, setLanguage] = useState<Language>('cpp')
+  const [compiler, setCompiler] = useState<Compiler>('gcc-13')
   const [standard, setStandard] = useState<Standard>('c++20')
   const [code, setCode] = useState<string>('')
   const [validationError, setValidationError] = useState<string>('')
   const [securityWarning, setSecurityWarning] = useState<string>('')
+  const [environments, setEnvironments] = useState<Environment[]>([])
 
   // Rate limiter: 10 requests per minute
   const rateLimiterRef = useRef(new RateLimiter(10, 60000))
@@ -73,11 +78,26 @@ export function Home() {
     }
   }, [])
 
+  // Fetch available environments on mount
+  useEffect(() => {
+    const fetchEnvironments = async () => {
+      try {
+        const envs = await getEnvironments()
+        setEnvironments(envs)
+      } catch (err) {
+        console.error('Failed to fetch environments:', err)
+        // Don't show error to user - we have defaults
+      }
+    }
+    fetchEnvironments()
+  }, [])
+
   // Update default code when language changes
   useEffect(() => {
     const config = LANGUAGE_CONFIGS[language]
     if (config) {
       setCode(config.defaultCode)
+      setCompiler(config.compiler)
       if (config.standard) {
         setStandard(config.standard)
       }
@@ -131,9 +151,9 @@ export function Home() {
       await compile({
         code: encodedCode,
         language: config.language,
-        compiler: config.compiler,
+        compiler: compiler,
         standard:
-          language === 'cpp' || language === 'c++' ? standard : undefined,
+          language === 'cpp' || language === 'c++' || language === 'c' ? standard : undefined,
         architecture: DEFAULT_ARCHITECTURE,
         os: DEFAULT_OS,
       })
@@ -245,9 +265,12 @@ export function Home() {
             <CardContent className="pt-6">
               <EnvironmentSelector
                 selectedLanguage={language}
+                selectedCompiler={compiler}
                 selectedStandard={standard}
                 onLanguageChange={setLanguage}
+                onCompilerChange={setCompiler}
                 onStandardChange={setStandard}
+                environments={environments}
                 disabled={isCompiling}
               />
             </CardContent>
