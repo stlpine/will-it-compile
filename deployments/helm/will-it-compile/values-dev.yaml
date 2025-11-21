@@ -43,7 +43,19 @@ service:
   targetPort: 8080
 
 ingress:
-  enabled: false
+  enabled: false  # Use NodePort for local development
+  # To enable ingress in dev (e.g., with minikube or local cluster):
+  # enabled: true
+  # className: nginx
+  # hosts:
+  #   - host: will-it-compile.local
+  #     paths:
+  #       - path: /api
+  #         pathType: Prefix
+  #         backend: api
+  #       - path: /
+  #         pathType: Prefix
+  #         backend: web
 
 resources:
   limits:

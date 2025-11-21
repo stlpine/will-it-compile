@@ -228,6 +228,242 @@ kubectl port-forward -n will-it-compile svc/will-it-compile 8080:80
 curl http://localhost:8080/health
 ```
 
+## Accessing the Web Frontend
+
+The Helm chart includes a React-based web frontend for an intuitive UI experience.
+
+### Development Environment
+
+In development, the web frontend is exposed via **NodePort** for easy local access:
+
+**Method 1: Port Forwarding (Recommended)**
+```bash
+# Forward web frontend
+kubectl port-forward svc/will-it-compile-web 3000:80
+
+# Access in browser
+open http://localhost:3000
+
+# Forward API (if testing direct API calls)
+kubectl port-forward svc/will-it-compile 8080:80
+```
+
+**Method 2: NodePort Direct Access**
+```bash
+# Get the NodePort
+kubectl get svc will-it-compile-web -o jsonpath='{.spec.ports[0].nodePort}'
+
+# With minikube
+minikube service will-it-compile-web
+
+# With kind - you'll need to access via localhost with port mapping
+# (kind requires port mapping configured during cluster creation)
+```
+
+**Method 3: Enable Ingress (Optional)**
+
+For a production-like local setup, you can enable ingress in development:
+
+```bash
+# Install nginx ingress controller (if not already installed)
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+
+# Update values-dev.yaml to enable ingress
+# Or install with ingress enabled
+helm install will-it-compile ./deployments/helm/will-it-compile \
+  --values ./deployments/helm/will-it-compile/values-dev.yaml \
+  --set ingress.enabled=true \
+  --set ingress.className=nginx \
+  --set ingress.hosts[0].host=will-it-compile.local \
+  --set ingress.hosts[0].paths[0].path=/api \
+  --set ingress.hosts[0].paths[0].pathType=Prefix \
+  --set ingress.hosts[0].paths[0].backend=api \
+  --set ingress.hosts[0].paths[1].path=/ \
+  --set ingress.hosts[0].paths[1].pathType=Prefix \
+  --set ingress.hosts[0].paths[1].backend=web
+
+# Add to /etc/hosts
+echo "127.0.0.1 will-it-compile.local" | sudo tee -a /etc/hosts
+
+# Access
+open http://will-it-compile.local
+```
+
+### Production Environment
+
+In production, the web frontend is accessed via **Ingress** with HTTPS:
+
+**Default Configuration** (`values-production.yaml`):
+```yaml
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: compile.example.com
+      paths:
+        - path: /api          # Routes to API backend
+          pathType: Prefix
+          backend: api
+        - path: /             # Routes to web frontend
+          pathType: Prefix
+          backend: web
+  tls:
+    - secretName: will-it-compile-tls
+      hosts:
+        - compile.example.com
+```
+
+**Setup Steps:**
+
+1. **Install Ingress Controller** (if not already installed):
+```bash
+# NGINX Ingress Controller
+helm install ingress-nginx ingress-nginx/ingress-nginx \
+  --namespace ingress-nginx --create-namespace
+
+# Verify installation
+kubectl get pods -n ingress-nginx
+```
+
+2. **Install cert-manager** (for automatic TLS certificates):
+```bash
+# Install cert-manager
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.0/cert-manager.yaml
+
+# Create Let's Encrypt issuer (production)
+cat <<EOF | kubectl apply -f -
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: your-email@example.com
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    solvers:
+    - http01:
+        ingress:
+          class: nginx
+EOF
+```
+
+3. **Configure DNS**:
+```bash
+# Get ingress external IP
+kubectl get ingress -n will-it-compile
+
+# Point your domain to the ingress IP
+# Example: compile.example.com -> <EXTERNAL-IP>
+```
+
+4. **Deploy with Custom Domain**:
+```bash
+helm install will-it-compile ./deployments/helm/will-it-compile \
+  --namespace will-it-compile --create-namespace \
+  --values ./deployments/helm/will-it-compile/values-production.yaml \
+  --set ingress.hosts[0].host=compile.yourdomain.com \
+  --set ingress.tls[0].hosts[0]=compile.yourdomain.com
+```
+
+5. **Access**:
+```bash
+# Web UI (root path)
+https://compile.yourdomain.com
+
+# API endpoints
+https://compile.yourdomain.com/api/v1/health
+https://compile.yourdomain.com/api/v1/environments
+```
+
+### Verifying Web Frontend
+
+**Health Check:**
+```bash
+# Web frontend health
+curl http://localhost:3000/          # Dev (via port-forward)
+curl https://compile.yourdomain.com/  # Production
+
+# API health
+curl http://localhost:8080/health    # Dev (via port-forward)
+curl https://compile.yourdomain.com/api/v1/health  # Production
+```
+
+**Check Deployment Status:**
+```bash
+# Check web pods
+kubectl get pods -l app.kubernetes.io/component=web
+
+# Check web service
+kubectl get svc -l app.kubernetes.io/component=web
+
+# Check ingress routing
+kubectl describe ingress will-it-compile
+
+# View web logs
+kubectl logs -l app.kubernetes.io/component=web --tail=50
+```
+
+### Troubleshooting Web Access
+
+**Problem: Can't access web frontend**
+
+1. Check if web pods are running:
+```bash
+kubectl get pods -l app.kubernetes.io/component=web
+kubectl describe pod <web-pod-name>
+```
+
+2. Check service endpoints:
+```bash
+kubectl get endpoints will-it-compile-web
+```
+
+3. Check ingress configuration:
+```bash
+kubectl get ingress will-it-compile -o yaml
+```
+
+4. Test direct access to web pod:
+```bash
+kubectl port-forward <web-pod-name> 3000:80
+curl http://localhost:3000
+```
+
+**Problem: API calls failing from web frontend**
+
+1. Check API_SERVICE_URL environment variable in web pods:
+```bash
+kubectl get pods -l app.kubernetes.io/component=web -o jsonpath='{.items[0].spec.containers[0].env}'
+```
+
+2. Verify API service is reachable from web pods:
+```bash
+kubectl exec -it <web-pod-name> -- wget -O- http://will-it-compile:80/health
+```
+
+**Problem: Ingress not routing correctly**
+
+1. Check ingress controller logs:
+```bash
+kubectl logs -n ingress-nginx -l app.kubernetes.io/component=controller
+```
+
+2. Verify backend services exist:
+```bash
+kubectl get svc will-it-compile will-it-compile-web
+```
+
+3. Test ingress rules:
+```bash
+# Should route to API
+curl -H "Host: compile.yourdomain.com" http://<INGRESS-IP>/api/v1/health
+
+# Should route to web
+curl -H "Host: compile.yourdomain.com" http://<INGRESS-IP>/
+```
+
 ## Redis Configuration
 
 ### Embedded Redis

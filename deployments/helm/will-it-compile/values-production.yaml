@@ -58,8 +58,14 @@ ingress:
   hosts:
     - host: compile.example.com
       paths:
+        # API backend - handles all /api/* requests
+        - path: /api
+          pathType: Prefix
+          backend: api
+        # Web frontend - handles all other requests (root, static assets, etc.)
         - path: /
           pathType: Prefix
+          backend: web
   tls:
     - secretName: will-it-compile-tls
       hosts:
