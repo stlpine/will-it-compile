@@ -67,7 +67,7 @@ spec:
           containerPort: {{ .Values.service.targetPort }}
           protocol: TCP
         env:
-        {{- toYaml .Values.env | nindent 10 }}
+        {{- toYaml .Values.env | nindent 8 }}
         {{- if .Values.redis.enabled }}
         - name: REDIS_ENABLED
           value: "true"
