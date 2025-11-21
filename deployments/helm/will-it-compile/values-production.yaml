@@ -8,6 +8,11 @@ image:
   pullPolicy: IfNotPresent
   tag: ""  # Specify git SHA or semantic version at deploy time, never use 'latest'
 
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
 # Compiler images matching configs/environments.yaml
 # Production environment includes all supported versions
 compilerImages:
@@ -42,6 +47,22 @@ podAnnotations:
   prometheus.io/scrape: "true"
   prometheus.io/port: "8080"
   prometheus.io/path: "/metrics"
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1000
 
 service:
   type: ClusterIP
@@ -144,16 +165,27 @@ affinity:
                   - will-it-compile
           topologyKey: kubernetes.io/hostname
 
-# Node selector for dedicated nodes (optional)
+# Node selector for dedicated nodes (optional - uncomment to use)
 # nodeSelector:
 #   workload: compilation
 
-# Tolerations for tainted nodes (optional)
+# Tolerations for tainted nodes (optional - uncomment to use)
 # tolerations:
 #   - key: "workload"
 #     operator: "Equal"
 #     value: "compilation"
 #     effect: "NoSchedule"
+
+# Production environment variables
+env:
+  - name: PORT
+    value: "8080"
+  - name: NAMESPACE
+    valueFrom:
+      fieldRef:
+        fieldPath: metadata.namespace
+  - name: LOG_LEVEL
+    value: "info"
 
 # Redis Configuration (Production)
 # Ephemeral in-memory cache - data lost on pod restart
