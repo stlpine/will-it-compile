@@ -8,19 +8,28 @@ image:
   pullPolicy: IfNotPresent
   tag: "latest"
 
-# Using official compiler images (same as values.yaml)
+# Compiler images matching configs/environments.yaml
+# Dev environment must include ALL versions to match environments.yaml config
 compilerImages:
+  # C/C++ - Official GCC images (Debian-based, no alpine)
+  # Supports C (GCC 9, 11, 13) and C++ (GCC 9, 10, 11, 12, 13)
   gcc:
     repository: gcc
-    tags: ["13-alpine"]  # Dev uses latest version only
+    tags: ["9", "10", "11", "12", "13"]
     pullPolicy: IfNotPresent
+
+  # Go - Official Golang images (Alpine-based)
+  # Supports versions 1.20, 1.21, 1.22, 1.23
   go:
     repository: golang
-    tags: ["1.23-alpine"]
+    tags: ["1.20-alpine", "1.21-alpine", "1.22-alpine", "1.23-alpine"]
     pullPolicy: IfNotPresent
+
+  # Rust - Official Rust images (Alpine-based)
+  # Supports versions 1.70, 1.75, 1.80
   rust:
     repository: rust
-    tags: ["1.80-alpine"]
+    tags: ["1.70-alpine", "1.75-alpine", "1.80-alpine"]
     pullPolicy: IfNotPresent
 
 serviceAccount:
