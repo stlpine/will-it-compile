@@ -34,7 +34,24 @@
     }'
 
 4. Compiler images must be available in the cluster:
-   - {{ .Values.compilerImages.cpp.repository }}:{{ .Values.compilerImages.cpp.tag }}
+{{- if .Values.compilerImages.gcc }}
+   GCC (C/C++):
+   {{- range .Values.compilerImages.gcc.tags }}
+   - {{ $.Values.compilerImages.gcc.repository }}:{{ . }}
+   {{- end }}
+{{- end }}
+{{- if .Values.compilerImages.go }}
+   Go:
+   {{- range .Values.compilerImages.go.tags }}
+   - {{ $.Values.compilerImages.go.repository }}:{{ . }}
+   {{- end }}
+{{- end }}
+{{- if .Values.compilerImages.rust }}
+   Rust:
+   {{- range .Values.compilerImages.rust.tags }}
+   - {{ $.Values.compilerImages.rust.repository }}:{{ . }}
+   {{- end }}
+{{- end }}
 
    Make sure these images are either:
    a) Pre-pulled on all nodes, or
