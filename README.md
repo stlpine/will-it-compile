@@ -1,6 +1,6 @@
 # Will-It-Compile
 
-A secure, cloud-ready service that checks whether code compiles in specified environments (e.g., Linux x86_64 with C++20). Compilation is performed in sandboxed Docker containers with strict security controls.
+A secure, cloud-ready service that checks whether code compiles in specified environments (e.g., Linux x86_64/ARM64 with C++20). Compilation is performed in sandboxed Docker containers with strict security controls.
 
 ## Features
 
@@ -490,9 +490,11 @@ For production deployment on Kubernetes:
 
 ### Cloud Platforms
 
-- **AWS**: Deploy on ECS/Fargate with proper IAM roles
+- **AWS**: Deploy on ECS/Fargate with proper IAM roles (supports both x86_64 and ARM64/Graviton instances)
 - **GCP**: Use Cloud Run with appropriate permissions
 - **Azure**: Deploy on Azure Container Instances
+
+**Multi-Architecture Support**: Docker images are built for both linux/amd64 and linux/arm64 platforms, enabling deployment on x86_64 and ARM64 servers (AWS Graviton, Apple Silicon, etc.).
 
 ## Configuration
 

@@ -183,6 +183,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: |
             stlpine/will-it-compile-api:latest
             stlpine/will-it-compile-api:${{ steps.meta.outputs.sha_short }}
@@ -195,6 +196,7 @@ jobs:
           context: ./web
           file: ./web/Dockerfile
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: |
             stlpine/will-it-compile-web:latest
             stlpine/will-it-compile-web:${{ steps.meta.outputs.sha_short }}
