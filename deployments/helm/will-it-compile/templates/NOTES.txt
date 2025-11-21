@@ -1,30 +1,68 @@
-1. Get the application URL by running these commands:
+Thank you for installing {{ .Chart.Name }}!
+
+Your release is named {{ .Release.Name }}.
+
+================================================================================
+DEPLOYMENT CONFIGURATION
+================================================================================
+  - Replicas: {{ .Values.replicaCount }}
+  - Autoscaling: {{ if .Values.autoscaling.enabled }}enabled ({{ .Values.autoscaling.minReplicas }}-{{ .Values.autoscaling.maxReplicas }}){{ else }}disabled{{ end }}
+  - Redis: {{ if .Values.redis.enabled }}enabled{{ else }}disabled{{ end }}
+  - Worker Pool: {{ if .Values.workerPool.enabled }}enabled ({{ .Values.workerPool.maxWorkers }} workers){{ else }}disabled{{ end }}
+  - Web Frontend: {{ if .Values.web.enabled }}enabled{{ else }}disabled{{ end }}
+
+================================================================================
+ACCESSING THE APPLICATION
+================================================================================
+
 {{- if .Values.ingress.enabled }}
-{{- range $host := .Values.ingress.hosts }}
+The application is available at:
+{{- range .Values.ingress.hosts }}
   {{- range .paths }}
-  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
+  {{- if eq .backend "api" }}
+  API:  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}{{ .path }}
+  {{- else }}
+  Web:  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}{{ .path }}
+  {{- end }}
   {{- end }}
 {{- end }}
 {{- else if contains "NodePort" .Values.service.type }}
+Get the application URL by running these commands:
   export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "will-it-compile.fullname" . }})
   export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
-  echo http://$NODE_IP:$NODE_PORT
+  echo "API: http://$NODE_IP:$NODE_PORT/api/v1/compile"
+{{- if .Values.web.enabled }}
+  export WEB_NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "will-it-compile.fullname" . }}-web)
+  echo "Web: http://$NODE_IP:$WEB_NODE_PORT"
+{{- end }}
 {{- else if contains "LoadBalancer" .Values.service.type }}
-     NOTE: It may take a few minutes for the LoadBalancer IP to be available.
-           You can watch the status of by running 'kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "will-it-compile.fullname" . }}'
+NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+      You can watch the status by running:
+  kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "will-it-compile.fullname" . }}
+
+Once available, get the application URL by running:
   export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "will-it-compile.fullname" . }} --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
-  echo http://$SERVICE_IP:{{ .Values.service.port }}
-{{- else if contains "ClusterIP" .Values.service.type }}
+  echo "API: http://$SERVICE_IP:{{ .Values.service.port }}/api/v1/compile"
+{{- if .Values.web.enabled }}
+  export WEB_SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "will-it-compile.fullname" . }}-web --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
+  echo "Web: http://$WEB_SERVICE_IP:{{ .Values.web.service.port }}"
+{{- end }}
+{{- else }}
+Get the application URL by running these commands:
   export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "will-it-compile.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
   export CONTAINER_PORT=$(kubectl get pod --namespace {{ .Release.Namespace }} $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
   echo "Visit http://127.0.0.1:8080 to use your application"
   kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8080:$CONTAINER_PORT
 {{- end }}
 
-2. Check the health of the service:
-  curl http://{{ if .Values.ingress.enabled }}{{ (index .Values.ingress.hosts 0).host }}{{ else }}localhost:8080{{ end }}/health
+================================================================================
+TESTING THE API
+================================================================================
 
-3. Test compilation (requires port-forward if using ClusterIP):
+Check the health of the service:
+  curl http://localhost:8080/health
+
+Test compilation (C++ "Hello World"):
   curl -X POST http://localhost:8080/api/v1/compile \
     -H "Content-Type: application/json" \
     -d '{
@@ -33,28 +71,98 @@
       "compiler": "gcc-13"
     }'
 
-4. Compiler images must be available in the cluster:
+List available environments:
+  curl http://localhost:8080/api/v1/environments
+
+================================================================================
+COMPILER IMAGES
+================================================================================
+
+The following compiler images must be available in the cluster:
 {{- if .Values.compilerImages.gcc }}
-   GCC (C/C++):
-   {{- range .Values.compilerImages.gcc.tags }}
-   - {{ $.Values.compilerImages.gcc.repository }}:{{ . }}
-   {{- end }}
+GCC (C/C++):
+{{- range .Values.compilerImages.gcc.tags }}
+  - {{ $.Values.compilerImages.gcc.repository }}:{{ . }}
+{{- end }}
 {{- end }}
 {{- if .Values.compilerImages.go }}
-   Go:
-   {{- range .Values.compilerImages.go.tags }}
-   - {{ $.Values.compilerImages.go.repository }}:{{ . }}
-   {{- end }}
+Go:
+{{- range .Values.compilerImages.go.tags }}
+  - {{ $.Values.compilerImages.go.repository }}:{{ . }}
+{{- end }}
 {{- end }}
 {{- if .Values.compilerImages.rust }}
-   Rust:
-   {{- range .Values.compilerImages.rust.tags }}
-   - {{ $.Values.compilerImages.rust.repository }}:{{ . }}
-   {{- end }}
+Rust:
+{{- range .Values.compilerImages.rust.tags }}
+  - {{ $.Values.compilerImages.rust.repository }}:{{ . }}
+{{- end }}
 {{- end }}
 
-   Make sure these images are either:
-   a) Pre-pulled on all nodes, or
-   b) Available in your container registry
+Make sure these images are either:
+  a) Pre-pulled on all nodes, or
+  b) Available in your container registry
+
+{{- if .Values.redis.enabled }}
+
+================================================================================
+REDIS CONFIGURATION
+================================================================================
+Redis is enabled for job storage.
+{{- if .Values.redis.auth.enabled }}
+The Redis password is stored in the secret: {{ include "will-it-compile.fullname" . }}-redis-secret
+
+To retrieve the password:
+  kubectl get secret --namespace {{ .Release.Namespace }} {{ include "will-it-compile.fullname" . }}-redis-secret -o jsonpath="{.data.password}" | base64 --decode
+{{- else }}
+WARNING: Redis authentication is DISABLED. This is not recommended for production.
+{{- end }}
+{{- else }}
+
+================================================================================
+WARNING: IN-MEMORY STORAGE
+================================================================================
+Using in-memory storage. Jobs will be lost on pod restart.
+For production, enable Redis by setting redis.enabled=true
+{{- end }}
+
+{{- if not .Values.networkPolicy.enabled }}
+
+================================================================================
+WARNING: NETWORK POLICIES DISABLED
+================================================================================
+Network policies are DISABLED. For production, enable network policies
+by setting networkPolicy.enabled=true
+{{- end }}
+
+{{- if eq .Values.image.tag "latest" }}
+
+================================================================================
+WARNING: USING 'latest' TAG
+================================================================================
+Using 'latest' image tag. For production, use a specific version tag.
+{{- end }}
+
+================================================================================
+HELPFUL COMMANDS
+================================================================================
+
+Check release status:
+  helm status {{ .Release.Name }}
+
+Get all release information:
+  helm get all {{ .Release.Name }}
+
+View logs:
+  kubectl logs -f deployment/{{ include "will-it-compile.fullname" . }} -n {{ .Release.Namespace }}
+
+{{- if .Values.redis.enabled }}
+View Redis logs:
+  kubectl logs -f deployment/{{ include "will-it-compile.fullname" . }}-redis -n {{ .Release.Namespace }}
+{{- end }}
+
+{{- if .Values.web.enabled }}
+View web frontend logs:
+  kubectl logs -f deployment/{{ include "will-it-compile.fullname" . }}-web -n {{ .Release.Namespace }}
+{{- end }}
 
 For more information, visit: https://github.com/stlpine/will-it-compile
