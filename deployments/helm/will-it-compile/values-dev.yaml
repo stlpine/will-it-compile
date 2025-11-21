@@ -107,3 +107,46 @@ workerPool:
   enabled: true
   maxWorkers: 2  # Fewer workers for dev
   queueSize: 50  # Smaller queue for dev
+
+# Web Frontend Configuration (Development)
+web:
+  enabled: true  # Enable web frontend for development
+  replicaCount: 1
+
+  image:
+    repository: stlpine/will-it-compile-web
+    pullPolicy: IfNotPresent
+    tag: "latest"
+
+  service:
+    type: NodePort
+    port: 80
+
+  podAnnotations: {}
+
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 101  # nginx user
+    fsGroup: 101
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+
+  resources:
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+  autoscaling:
+    enabled: false  # Disabled for development
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
