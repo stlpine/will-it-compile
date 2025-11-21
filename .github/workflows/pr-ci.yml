@@ -162,6 +162,8 @@ jobs:
           context: .
           file: ./Dockerfile
           push: false
+          # Single-arch for PR (faster): native platform only
+          platforms: linux/amd64
           tags: stlpine/will-it-compile-api:test
           cache-from: type=gha
           cache-to: type=gha,mode=max

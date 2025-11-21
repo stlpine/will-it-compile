@@ -7,14 +7,17 @@ RUN apk add --no-cache git make
 # Set working directory
 WORKDIR /app
 
-# Copy dependency files
+# Copy dependency files first (better caching)
 COPY go.mod go.sum ./
+
+# Download dependencies (cached unless go.mod/go.sum change)
+RUN go mod download && go mod verify
 
 # Copy source code and Makefile
 COPY . .
 
-# Build the application using Makefile (handles deps automatically)
-RUN make build-api
+# Build the application directly (deps already downloaded)
+RUN go build -v -o bin/will-it-compile-api cmd/api/main.go
 
 # Runtime stage
 FROM alpine:3.19

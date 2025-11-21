@@ -125,6 +125,8 @@ jobs:
           context: .
           file: ./Dockerfile
           push: false
+          # Single-arch for test (faster): native platform only
+          platforms: linux/amd64
           tags: stlpine/will-it-compile-api:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -141,6 +143,8 @@ jobs:
           context: ./web
           file: ./web/Dockerfile
           push: false
+          # Single-arch for test (faster): native platform only
+          platforms: linux/amd64
           tags: stlpine/will-it-compile-web:test
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
@@ -183,6 +187,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
+          # Multi-arch build: amd64 + arm64 (slower but production-ready)
           platforms: linux/amd64,linux/arm64
           tags: |
             stlpine/will-it-compile-api:latest
@@ -196,6 +201,7 @@ jobs:
           context: ./web
           file: ./web/Dockerfile
           push: true
+          # Multi-arch build: amd64 + arm64 (slower but production-ready)
           platforms: linux/amd64,linux/arm64
           tags: |
             stlpine/will-it-compile-web:latest
