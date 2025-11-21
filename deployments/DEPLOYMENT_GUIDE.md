@@ -49,6 +49,10 @@ golang:1.22-alpine        # Go (Alpine-based)
 rust:1.75-alpine          # Rust (Alpine-based)
 ```
 
+**Multi-Architecture Support**: All images support both linux/amd64 and linux/arm64 platforms, enabling deployment on:
+- x86_64 servers (AWS EC2, GCP, Azure VMs)
+- ARM64 servers (AWS Graviton, Apple Silicon, Raspberry Pi)
+
 No additional setup needed - Helm charts use these images by default.
 
 **Option 2: Build and Push Custom API Server Image**
