@@ -8,19 +8,28 @@ image:
   pullPolicy: IfNotPresent
   tag: ""  # Specify git SHA or semantic version at deploy time, never use 'latest'
 
-# Official compiler images for production
+# Compiler images matching configs/environments.yaml
+# Production environment includes all supported versions
 compilerImages:
+  # C/C++ - Official GCC images (Debian-based, no alpine)
+  # Supports C (GCC 9, 11, 13) and C++ (GCC 9, 10, 11, 12, 13)
   gcc:
     repository: gcc
-    tags: ["9-alpine", "11-alpine", "13-alpine"]
+    tags: ["9", "10", "11", "12", "13"]
     pullPolicy: IfNotPresent
+
+  # Go - Official Golang images (Alpine-based)
+  # Supports versions 1.20, 1.21, 1.22, 1.23
   go:
     repository: golang
-    tags: ["1.22-alpine", "1.23-alpine"]
+    tags: ["1.20-alpine", "1.21-alpine", "1.22-alpine", "1.23-alpine"]
     pullPolicy: IfNotPresent
+
+  # Rust - Official Rust images (Alpine-based)
+  # Supports versions 1.70, 1.75, 1.80
   rust:
     repository: rust
-    tags: ["1.75-alpine", "1.80-alpine"]
+    tags: ["1.70-alpine", "1.75-alpine", "1.80-alpine"]
     pullPolicy: IfNotPresent
 
 serviceAccount:
