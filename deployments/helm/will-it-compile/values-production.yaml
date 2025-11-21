@@ -58,8 +58,14 @@ ingress:
   hosts:
     - host: compile.example.com
       paths:
+        # API backend - handles all /api/* requests
+        - path: /api
+          pathType: Prefix
+          backend: api
+        # Web frontend - handles all other requests (root, static assets, etc.)
         - path: /
           pathType: Prefix
+          backend: web
   tls:
     - secretName: will-it-compile-tls
       hosts:
@@ -184,3 +190,66 @@ workerPool:
   enabled: true
   maxWorkers: 20  # More workers for production
   queueSize: 500  # Larger queue for production
+
+# Web Frontend Configuration (Production)
+web:
+  enabled: true  # Enable web frontend for production
+  replicaCount: 2  # Start with 2 replicas for HA
+
+  image:
+    repository: stlpine/will-it-compile-web
+    pullPolicy: IfNotPresent
+    tag: ""  # Specify git SHA or semantic version at deploy time, never use 'latest'
+
+  service:
+    type: ClusterIP
+    port: 80
+
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "80"
+    prometheus.io/path: "/metrics"
+
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 101  # nginx user
+    fsGroup: 101
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+  # Production-specific affinity rules for HA
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - web
+            topologyKey: kubernetes.io/hostname
+
+  nodeSelector: {}
+  tolerations: []
