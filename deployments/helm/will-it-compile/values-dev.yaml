@@ -71,7 +71,7 @@ ingress:
     # No TLS for development - use HTTP only
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
   hosts:
-    - host: compile.poolc.org
+    - host: compile.dev.poolc.org
       paths:
         - path: /api
           pathType: Prefix
