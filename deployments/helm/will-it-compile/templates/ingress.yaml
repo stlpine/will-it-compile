@@ -1,9 +1,12 @@
 {{- if .Values.ingress.enabled -}}
-# API Ingress - handles /api routes with higher priority
+# Combined Ingress - routes /api to API service, everything else to web
+# IMPORTANT: Must be a single Ingress resource to ensure proper path priority
+# With separate Ingress resources, the ingress controller may load-balance
+# between them non-deterministically, causing /api requests to reach web service
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "will-it-compile.fullname" . }}-api
+  name: {{ include "will-it-compile.fullname" . }}
   labels:
     {{- include "will-it-compile.labels" . | nindent 4 }}
   annotations:
@@ -29,6 +32,8 @@ spec:
     - host: {{ .host | quote }}
       http:
         paths:
+          # API routes - must come first for proper priority
+          # Ingress controllers match longest prefix first within same resource
           - path: /api
             pathType: Prefix
             backend:
@@ -36,38 +41,7 @@ spec:
                 name: {{ include "will-it-compile.fullname" $ }}
                 port:
                   number: {{ $.Values.service.port }}
-    {{- end }}
----
-# Web Ingress - handles all other routes (SPA fallback)
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: {{ include "will-it-compile.fullname" . }}-web
-  labels:
-    {{- include "will-it-compile.labels" . | nindent 4 }}
-  annotations:
-    {{- with .Values.ingress.annotations }}
-    {{- toYaml . | nindent 4 }}
-    {{- end }}
-spec:
-  {{- if .Values.ingress.className }}
-  ingressClassName: {{ .Values.ingress.className }}
-  {{- end }}
-  {{- if .Values.ingress.tls }}
-  tls:
-    {{- range .Values.ingress.tls }}
-    - hosts:
-        {{- range .hosts }}
-        - {{ . | quote }}
-        {{- end }}
-      secretName: {{ .secretName }}
-    {{- end }}
-  {{- end }}
-  rules:
-    {{- range .Values.ingress.hosts }}
-    - host: {{ .host | quote }}
-      http:
-        paths:
+          # Web frontend - catch all other routes (SPA fallback)
           - path: /
             pathType: Prefix
             backend:
