@@ -73,12 +73,14 @@ func TestRedisStore_StoreResult(t *testing.T) {
 
 	// Create test result
 	result := models.CompilationResult{
+		JobID:    "test-job-1",
 		Success:  true,
 		Compiled: true,
 		Stdout:   "Compilation successful",
 		Stderr:   "",
 		ExitCode: 0,
 		Duration: 1234 * time.Millisecond,
+		Error:    "",
 	}
 
 	// Store result
@@ -88,11 +90,13 @@ func TestRedisStore_StoreResult(t *testing.T) {
 	// Retrieve result
 	retrieved, found := store.GetResult("test-job-1")
 	assert.True(t, found)
+	assert.Equal(t, result.JobID, retrieved.JobID)
 	assert.Equal(t, result.Success, retrieved.Success)
 	assert.Equal(t, result.Compiled, retrieved.Compiled)
 	assert.Equal(t, result.Stdout, retrieved.Stdout)
 	assert.Equal(t, result.ExitCode, retrieved.ExitCode)
 	assert.Equal(t, result.Duration, retrieved.Duration)
+	assert.Equal(t, result.Error, retrieved.Error)
 }
 
 func TestRedisStore_UpdateJobStatus(t *testing.T) {

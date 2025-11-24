@@ -136,12 +136,14 @@ func (s *Store) StoreResult(jobID string, result models.CompilationResult) error
 
 	// Store as hash
 	err := s.client.HSet(s.ctx, key, map[string]interface{}{
+		"job_id":    result.JobID,
 		"success":   result.Success,
 		"compiled":  result.Compiled,
 		"stdout":    result.Stdout,
 		"stderr":    result.Stderr,
 		"exit_code": result.ExitCode,
 		"duration":  result.Duration.Nanoseconds(),
+		"error":     result.Error,
 	}).Err()
 	if err != nil {
 		return fmt.Errorf("failed to store result for job %s: %w", jobID, err)
@@ -164,8 +166,10 @@ func (s *Store) GetResult(jobID string) (models.CompilationResult, bool) {
 
 	// Parse result from hash
 	compilationResult := models.CompilationResult{
+		JobID:  result["job_id"],
 		Stdout: result["stdout"],
 		Stderr: result["stderr"],
+		Error:  result["error"],
 	}
 
 	// Parse boolean fields
