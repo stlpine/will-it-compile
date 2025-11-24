@@ -81,6 +81,8 @@ func TestWorkerPool_JobProcessing(t *testing.T) {
 		assert.Equal(t, int64(1), stats.TotalProcessed, "Should have processed 1 job")
 		assert.Equal(t, int64(1), stats.TotalSuccessful, "Should have 1 successful job")
 		assert.Equal(t, int64(0), stats.TotalFailed, "Should have 0 failed jobs")
+		assert.Equal(t, int64(0), stats.TotalTimeout, "Should have 0 timeout jobs")
+		assert.Equal(t, int64(0), stats.TotalErrors, "Should have 0 error jobs")
 
 		// Verify job result
 		result, hasResult := server.jobs.GetResult(job.ID)
@@ -134,6 +136,8 @@ func TestWorkerPool_ConcurrentJobs(t *testing.T) {
 		assert.Equal(t, int64(numJobs), stats.TotalProcessed, "Should have processed all jobs")
 		assert.Equal(t, int64(numJobs), stats.TotalSuccessful, "All jobs should be successful")
 		assert.Equal(t, int64(0), stats.TotalFailed, "No jobs should fail")
+		assert.Equal(t, int64(0), stats.TotalTimeout, "No jobs should timeout")
+		assert.Equal(t, int64(0), stats.TotalErrors, "No jobs should error")
 		assert.Equal(t, 0, stats.ActiveWorkers, "All workers should be idle")
 		assert.Equal(t, 5, stats.AvailableSlots, "All slots should be available")
 	})

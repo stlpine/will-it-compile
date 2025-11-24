@@ -24,9 +24,10 @@ export type OS = 'linux' | 'windows' | 'macos' | ''
 export type JobStatus =
   | 'queued'
   | 'processing'
-  | 'completed'
-  | 'failed'
-  | 'timeout'
+  | 'completed' // Code compiled successfully
+  | 'failed'    // Code failed to compile (syntax/linker errors)
+  | 'timeout'   // Compilation timed out
+  | 'error'     // Infrastructure/system error
 
 // CompilationRequest represents an incoming request to compile code
 export interface CompilationRequest {
@@ -107,8 +108,10 @@ export interface WorkerStats {
   available_slots: number
   queued_jobs: number
   total_processed: number
-  total_successful: number
-  total_failed: number
+  total_successful: number  // Code compiled successfully
+  total_failed: number      // Code failed to compile (user errors)
+  total_timeout: number     // Compilation timed out
+  total_errors: number      // Infrastructure/system errors
   uptime: string
   uptime_seconds: number
   start_time: string // ISO 8601 timestamp

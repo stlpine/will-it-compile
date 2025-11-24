@@ -27,12 +27,15 @@ func (m *mockCompiler) Compile(ctx context.Context, job models.CompilationJob) m
 	time.Sleep(m.compileDelay)
 
 	if m.shouldFail {
+		// Simulate a compilation failure (syntax error in user's code)
+		// Note: Error field is empty because this is not an infrastructure error
+		// The compiler ran successfully, but the code didn't compile
 		return models.CompilationResult{
-			Success:  false,
-			Compiled: false,
-			Error:    "compilation error",
+			Success:  true,  // Infrastructure worked fine
+			Compiled: false, // But code didn't compile
+			Error:    "",    // No infrastructure error
 			ExitCode: 1,
-			Stderr:   "error: compilation failed",
+			Stderr:   "error: expected ';' before '}' token",
 		}
 	}
 
@@ -135,10 +138,11 @@ func TestAsyncJobProcessing(t *testing.T) {
 				require.True(t, hasResult)
 
 				if tt.expectError {
-					assert.False(t, result.Success)
-					assert.False(t, result.Compiled)
+					// Compilation failure: infrastructure worked, but code didn't compile
+					assert.True(t, result.Success, "Infrastructure should have worked")
+					assert.False(t, result.Compiled, "Code should not have compiled")
 					assert.NotEqual(t, 0, result.ExitCode)
-					assert.NotEmpty(t, result.Error)
+					assert.NotEmpty(t, result.Stderr, "Should have compiler error output")
 				} else {
 					assert.True(t, result.Success)
 					assert.True(t, result.Compiled)

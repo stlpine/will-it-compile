@@ -50,6 +50,8 @@ func TestWorkerStatsEndpoint(t *testing.T) {
 	assert.GreaterOrEqual(t, stats.TotalProcessed, int64(0), "total processed should be non-negative")
 	assert.GreaterOrEqual(t, stats.TotalSuccessful, int64(0), "total successful should be non-negative")
 	assert.GreaterOrEqual(t, stats.TotalFailed, int64(0), "total failed should be non-negative")
+	assert.GreaterOrEqual(t, stats.TotalTimeout, int64(0), "total timeout should be non-negative")
+	assert.GreaterOrEqual(t, stats.TotalErrors, int64(0), "total errors should be non-negative")
 	assert.NotEmpty(t, stats.Uptime, "uptime should not be empty")
 	assert.GreaterOrEqual(t, stats.UptimeSeconds, int64(0), "uptime seconds should be non-negative")
 	assert.False(t, stats.StartTime.IsZero(), "start time should be set")

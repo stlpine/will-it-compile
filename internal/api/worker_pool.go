@@ -23,8 +23,10 @@ type WorkerPool struct {
 	activeWorkers   atomic.Int32
 	availableSlots  atomic.Int32
 	totalProcessed  atomic.Int64
-	totalSuccessful atomic.Int64
-	totalFailed     atomic.Int64
+	totalSuccessful atomic.Int64 // Code compiled successfully
+	totalFailed     atomic.Int64 // Code failed to compile (user's code errors)
+	totalTimeout    atomic.Int64 // Compilation timed out
+	totalErrors     atomic.Int64 // Infrastructure/system errors
 
 	// Server reference for job processing
 	server *Server
@@ -45,8 +47,10 @@ type WorkerStats struct {
 	AvailableSlots  int       `json:"available_slots"`
 	QueuedJobs      int       `json:"queued_jobs"`
 	TotalProcessed  int64     `json:"total_processed"`
-	TotalSuccessful int64     `json:"total_successful"`
-	TotalFailed     int64     `json:"total_failed"`
+	TotalSuccessful int64     `json:"total_successful"` // Code compiled successfully
+	TotalFailed     int64     `json:"total_failed"`     // Code failed to compile (user errors)
+	TotalTimeout    int64     `json:"total_timeout"`    // Compilation timed out
+	TotalErrors     int64     `json:"total_errors"`     // Infrastructure/system errors
 	Uptime          string    `json:"uptime"`
 	UptimeSeconds   int64     `json:"uptime_seconds"`
 	StartTime       time.Time `json:"start_time"`
@@ -117,6 +121,8 @@ func (wp *WorkerPool) GetStats() WorkerStats {
 		TotalProcessed:  wp.totalProcessed.Load(),
 		TotalSuccessful: wp.totalSuccessful.Load(),
 		TotalFailed:     wp.totalFailed.Load(),
+		TotalTimeout:    wp.totalTimeout.Load(),
+		TotalErrors:     wp.totalErrors.Load(),
 		Uptime:          formatUptime(uptime),
 		UptimeSeconds:   int64(uptime.Seconds()),
 		StartTime:       wp.startTime,
@@ -154,14 +160,18 @@ func (wp *WorkerPool) worker(id int) {
 			// Update stats
 			wp.totalProcessed.Add(1)
 
-			// Check final job status
+			// Check final job status and update appropriate counter
 			finalJob, exists := wp.server.jobs.Get(job.ID)
 			if exists {
 				switch finalJob.Status {
 				case models.StatusCompleted:
 					wp.totalSuccessful.Add(1)
-				case models.StatusFailed, models.StatusTimeout:
+				case models.StatusFailed:
 					wp.totalFailed.Add(1)
+				case models.StatusTimeout:
+					wp.totalTimeout.Add(1)
+				case models.StatusError:
+					wp.totalErrors.Add(1)
 				}
 			}
 

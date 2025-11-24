@@ -220,12 +220,8 @@ func (c *Compiler) Compile(ctx context.Context, job models.CompilationJob) model
 		SourceFilename: sourceFilename,
 		CompileCommand: compileCmd,
 		WorkDir:        "/workspace",
-		Env: []string{
-			fmt.Sprintf("STANDARD=%s", envSpec.Standard),
-			fmt.Sprintf("SOURCE_FILE=/workspace/%s", sourceFilename),
-			"COMPILE_TIMEOUT=25",
-		},
-		Timeout: 30 * time.Second,
+		Env:            c.buildEnvVars(envSpec, sourceFilename),
+		Timeout:        30 * time.Second,
 	}
 
 	// Run compilation
@@ -316,14 +312,47 @@ func (c *Compiler) selectEnvironment(req models.CompilationRequest) (models.Envi
 	return env, nil
 }
 
+// buildEnvVars builds environment variables for the compilation container.
+// Includes common variables and language-specific ones (e.g., GOCACHE for Go).
+func (c *Compiler) buildEnvVars(env models.EnvironmentSpec, sourceFilename string) []string {
+	// Common environment variables for all languages
+	envVars := []string{
+		fmt.Sprintf("STANDARD=%s", env.Standard),
+		fmt.Sprintf("SOURCE_FILE=/workspace/%s", sourceFilename),
+		"COMPILE_TIMEOUT=25",
+	}
+
+	// Language-specific environment variables
+	switch env.Language {
+	case models.LanguageGo:
+		// Go needs writable cache directories
+		// In K8s, containers run as non-root and /.cache is not writable
+		envVars = append(envVars,
+			"GOCACHE=/tmp/go-cache",
+			"GOPATH=/tmp/go",
+		)
+	case models.LanguageRust:
+		// Rust cargo also needs writable cache
+		envVars = append(envVars,
+			"CARGO_HOME=/tmp/cargo",
+		)
+	}
+
+	return envVars
+}
+
 // buildCompileCommand builds the compilation command based on the environment.
 func (c *Compiler) buildCompileCommand(env models.EnvironmentSpec, sourceFilename string) string {
 	// Build command based on language
 	// Note: stderr is NOT redirected to stdout so errors appear in stderr field
 	switch env.Language {
-	case models.LanguageCpp, models.LanguageC:
-		// C/C++ compilation with GCC or Clang
+	case models.LanguageCpp:
+		// C++ compilation with g++
 		return fmt.Sprintf("g++ -std=%s /workspace/%s -o /workspace/output", env.Standard, sourceFilename)
+
+	case models.LanguageC:
+		// C compilation with gcc (not g++)
+		return fmt.Sprintf("gcc -std=%s /workspace/%s -o /workspace/output", env.Standard, sourceFilename)
 
 	case models.LanguageGo:
 		// Go compilation
