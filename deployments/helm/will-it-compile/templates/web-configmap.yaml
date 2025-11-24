@@ -43,8 +43,13 @@ data:
         add_header X-Content-Type-Options "nosniff" always;
         add_header X-XSS-Protection "1; mode=block" always;
 
-        # Note: /api is routed directly by Kubernetes Ingress to the API service
-        # No proxy_pass needed here - Ingress handles API routing
+        # Explicitly reject /api requests that accidentally reach this container
+        # This prevents serving index.html for API requests if Ingress misbehaves
+        # The Ingress should route /api to the API service, but this is a safety net
+        location /api/ {
+            return 404 '{"error": "API endpoint not found on web server"}';
+            add_header Content-Type application/json always;
+        }
 
         # Health check endpoint
         location /health {
