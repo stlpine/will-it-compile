@@ -189,9 +189,11 @@ func (k *KubernetesRuntime) createCompilationJob(ctx context.Context, config run
 					},
 					Containers: []corev1.Container{
 						{
-							Name:    "compiler",
-							Image:   config.ImageTag,
-							Command: []string{"/usr/bin/compile.sh"},
+							Name:  "compiler",
+							Image: config.ImageTag,
+							// Use shell to run the compile command (same as Docker runtime)
+							// Copy source from read-only ConfigMap to writable /tmp, then compile
+							Command: []string{"/bin/sh", "-c", k.buildCompileScript(config)},
 							Env:     k.convertEnv(config.Env),
 							Resources: corev1.ResourceRequirements{
 								Limits: corev1.ResourceList{
@@ -215,7 +217,7 @@ func (k *KubernetesRuntime) createCompilationJob(ctx context.Context, config run
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "source",
-									MountPath: "/workspace",
+									MountPath: "/source",
 									ReadOnly:  true,
 								},
 								{
@@ -411,6 +413,25 @@ func (k *KubernetesRuntime) getSourceFilename(config runtime.CompilationConfig) 
 		return config.SourceFilename
 	}
 	return "source.cpp"
+}
+
+// buildCompileScript creates a shell script that:
+// 1. Copies source from read-only /source to writable /tmp
+// 2. Changes to /tmp directory
+// 3. Runs the compile command
+func (k *KubernetesRuntime) buildCompileScript(config runtime.CompilationConfig) string {
+	sourceFilename := k.getSourceFilename(config)
+
+	// Build the script:
+	// - Copy source file to /tmp
+	// - cd to /tmp (writable workspace)
+	// - Run the compile command
+	script := fmt.Sprintf("cp /source/%s /tmp/ && cd /tmp && %s",
+		sourceFilename,
+		config.CompileCommand,
+	)
+
+	return script
 }
 
 // ptr is a helper to get pointer to a value.

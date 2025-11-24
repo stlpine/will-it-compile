@@ -8,6 +8,7 @@ import { useCompilation } from '../hooks/useCompilation'
 import {
   Language,
   Standard,
+  CompilerVersion,
   LANGUAGE_CONFIGS,
   DEFAULT_ARCHITECTURE,
   DEFAULT_OS,
@@ -44,6 +45,7 @@ import {
 export function Home() {
   const [language, setLanguage] = useState<Language>('cpp')
   const [standard, setStandard] = useState<Standard>('c++20')
+  const [version, setVersion] = useState<CompilerVersion>(LANGUAGE_CONFIGS['cpp'].defaultVersion)
   const [code, setCode] = useState<string>('')
   const [validationError, setValidationError] = useState<string>('')
   const [securityWarning, setSecurityWarning] = useState<string>('')
@@ -73,11 +75,12 @@ export function Home() {
     }
   }, [])
 
-  // Update default code when language changes
+  // Update default code, version, and standard when language changes
   useEffect(() => {
     const config = LANGUAGE_CONFIGS[language]
     if (config) {
       setCode(config.defaultCode)
+      setVersion(config.defaultVersion)
       if (config.standard) {
         setStandard(config.standard)
       }
@@ -128,12 +131,17 @@ export function Home() {
       // Safely encode source code to base64 (handles Unicode)
       const encodedCode = safeBase64Encode(code)
 
+      // Build compiler string: {compiler}-{version} (e.g., "gcc-13", "go-1.23", "rustc-1.80")
+      const compilerString = `${config.compiler}-${version}`
+
+      // Include standard for C and C++
+      const includeStandard = language === 'cpp' || language === 'c++' || language === 'c'
+
       await compile({
         code: encodedCode,
         language: config.language,
-        compiler: config.compiler,
-        standard:
-          language === 'cpp' || language === 'c++' ? standard : undefined,
+        compiler: compilerString,
+        standard: includeStandard ? standard : undefined,
         architecture: DEFAULT_ARCHITECTURE,
         os: DEFAULT_OS,
       })
@@ -179,7 +187,7 @@ export function Home() {
               className="rounded-full"
             >
               <a
-                href="https://github.com/yourusername/will-it-compile"
+                href="https://github.com/stlpine/will-it-compile"
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -246,8 +254,10 @@ export function Home() {
               <EnvironmentSelector
                 selectedLanguage={language}
                 selectedStandard={standard}
+                selectedVersion={version}
                 onLanguageChange={setLanguage}
                 onStandardChange={setStandard}
+                onVersionChange={setVersion}
                 disabled={isCompiling}
               />
             </CardContent>

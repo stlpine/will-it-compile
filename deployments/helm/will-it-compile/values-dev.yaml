@@ -70,12 +70,16 @@ ingress:
   annotations:
     # No TLS for development - use HTTP only
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # Enable regex for precise path matching - ensures /api takes priority over /
+    nginx.ingress.kubernetes.io/use-regex: "true"
   hosts:
     - host: compile.dev.poolc.org
       paths:
-        - path: /api
-          pathType: Prefix
+        # API routes - regex ensures higher priority over catch-all
+        - path: /api(/|$)(.*)
+          pathType: ImplementationSpecific
           backend: api
+        # Web frontend - catch all other routes
         - path: /
           pathType: Prefix
           backend: web

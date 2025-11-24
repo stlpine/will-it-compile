@@ -33,17 +33,36 @@ func (l Language) Normalize() Language {
 type Compiler string
 
 const (
-	CompilerGCC9    Compiler = "gcc-9"
-	CompilerGCC13   Compiler = "gcc-13"
-	CompilerClang15 Compiler = "clang-15"
-	CompilerGo      Compiler = "go"
-	CompilerRustc   Compiler = "rustc"
+	// GCC versions (C/C++)
+	CompilerGCC9  Compiler = "gcc-9"
+	CompilerGCC10 Compiler = "gcc-10"
+	CompilerGCC11 Compiler = "gcc-11"
+	CompilerGCC12 Compiler = "gcc-12"
+	CompilerGCC13 Compiler = "gcc-13"
+
+	// Go versions
+	CompilerGo120 Compiler = "go-1.20"
+	CompilerGo121 Compiler = "go-1.21"
+	CompilerGo122 Compiler = "go-1.22"
+	CompilerGo123 Compiler = "go-1.23"
+
+	// Rust versions
+	CompilerRustc170 Compiler = "rustc-1.70"
+	CompilerRustc175 Compiler = "rustc-1.75"
+	CompilerRustc180 Compiler = "rustc-1.80"
 )
 
 // Valid returns true if the compiler is valid.
 func (c Compiler) Valid() bool {
 	switch c {
-	case CompilerGCC9, CompilerGCC13, CompilerClang15, CompilerGo, CompilerRustc:
+	// GCC versions
+	case CompilerGCC9, CompilerGCC10, CompilerGCC11, CompilerGCC12, CompilerGCC13:
+		return true
+	// Go versions
+	case CompilerGo120, CompilerGo121, CompilerGo122, CompilerGo123:
+		return true
+	// Rust versions
+	case CompilerRustc170, CompilerRustc175, CompilerRustc180:
 		return true
 	default:
 		return false
