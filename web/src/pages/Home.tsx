@@ -187,7 +187,7 @@ export function Home() {
               className="rounded-full"
             >
               <a
-                href="https://github.com/yourusername/will-it-compile"
+                href="https://github.com/stlpine/will-it-compile"
                 target="_blank"
                 rel="noopener noreferrer"
               >
