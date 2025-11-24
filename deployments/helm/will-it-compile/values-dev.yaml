@@ -60,24 +60,26 @@ securityContext:
   runAsUser: 1000
 
 service:
-  type: NodePort
+  type: ClusterIP
   port: 80
   targetPort: 8080
 
 ingress:
-  enabled: false  # Use NodePort for local development
-  # To enable ingress in dev (e.g., with minikube or local cluster):
-  # enabled: true
-  # className: nginx
-  # hosts:
-  #   - host: will-it-compile.local
-  #     paths:
-  #       - path: /api
-  #         pathType: Prefix
-  #         backend: api
-  #       - path: /
-  #         pathType: Prefix
-  #         backend: web
+  enabled: true
+  className: nginx
+  annotations:
+    # No TLS for development - use HTTP only
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+  hosts:
+    - host: compile.poolc.org
+      paths:
+        - path: /api
+          pathType: Prefix
+          backend: api
+        - path: /
+          pathType: Prefix
+          backend: web
+  tls: []  # No TLS for development
 
 resources:
   limits:
@@ -159,7 +161,7 @@ web:
     tag: "latest"
 
   service:
-    type: NodePort
+    type: ClusterIP
     port: 80
 
   podAnnotations: {}

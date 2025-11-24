@@ -132,7 +132,7 @@ Images are automatically published on every main branch commit. No setup needed.
 # Deploy directly using Helm defaults
 helm install will-it-compile ./deployments/helm/will-it-compile \
   --namespace will-it-compile --create-namespace \
-  --values ./deployments/helm/will-it-compile/values-production.yaml
+  --values ./deployments/helm/will-it-compile/values-prod.yaml
 ```
 
 **Option B: Use Your Own Private Registry**
@@ -148,7 +148,7 @@ docker push your-registry.io/will-it-compile/api:v1.0.0
 # Deploy with custom registry
 helm install will-it-compile ./deployments/helm/will-it-compile \
   --namespace will-it-compile --create-namespace \
-  --values ./deployments/helm/will-it-compile/values-production.yaml \
+  --values ./deployments/helm/will-it-compile/values-prod.yaml \
   --set image.repository=your-registry.io/will-it-compile/api \
   --set compilerImages.cpp.repository=your-registry.io/will-it-compile/cpp-gcc
 ```
@@ -205,7 +205,7 @@ ingress:
 ```bash
 helm install will-it-compile ./deployments/helm/will-it-compile \
   --namespace will-it-compile \
-  --values ./deployments/helm/will-it-compile/values-production.yaml
+  --values ./deployments/helm/will-it-compile/values-prod.yaml
 ```
 
 ### 6. Verify Deployment
@@ -362,7 +362,7 @@ kubectl get ingress -n will-it-compile
 ```bash
 helm install will-it-compile ./deployments/helm/will-it-compile \
   --namespace will-it-compile --create-namespace \
-  --values ./deployments/helm/will-it-compile/values-production.yaml \
+  --values ./deployments/helm/will-it-compile/values-prod.yaml \
   --set ingress.hosts[0].host=compile.yourdomain.com \
   --set ingress.tls[0].hosts[0]=compile.yourdomain.com
 ```
@@ -510,7 +510,7 @@ helm install will-it-compile ./deployments/helm/will-it-compile \
 # Production
 helm install will-it-compile ./deployments/helm/will-it-compile \
   --namespace will-it-compile --create-namespace \
-  --values ./deployments/helm/will-it-compile/values-production.yaml
+  --values ./deployments/helm/will-it-compile/values-prod.yaml
 ```
 
 **Verify Redis Deployment:**
@@ -595,7 +595,7 @@ gcloud container clusters get-credentials will-it-compile --zone us-central1-a
 helm install will-it-compile ./deployments/helm/will-it-compile \
   --namespace will-it-compile \
   --create-namespace \
-  --values ./deployments/helm/will-it-compile/values-production.yaml \
+  --values ./deployments/helm/will-it-compile/values-prod.yaml \
   --set image.repository=gcr.io/your-project/will-it-compile/api \
   --set compilerImages.cpp.repository=gcr.io/your-project/will-it-compile/cpp-gcc
 ```
@@ -615,7 +615,7 @@ eksctl create cluster \
 helm install will-it-compile ./deployments/helm/will-it-compile \
   --namespace will-it-compile \
   --create-namespace \
-  --values ./deployments/helm/will-it-compile/values-production.yaml \
+  --values ./deployments/helm/will-it-compile/values-prod.yaml \
   --set image.repository=YOUR_ACCOUNT.dkr.ecr.us-west-2.amazonaws.com/will-it-compile/api \
   --set compilerImages.cpp.repository=YOUR_ACCOUNT.dkr.ecr.us-west-2.amazonaws.com/will-it-compile/cpp-gcc
 ```
@@ -641,7 +641,7 @@ az aks get-credentials --resource-group will-it-compile-rg --name will-it-compil
 helm install will-it-compile ./deployments/helm/will-it-compile \
   --namespace will-it-compile \
   --create-namespace \
-  --values ./deployments/helm/will-it-compile/values-production.yaml \
+  --values ./deployments/helm/will-it-compile/values-prod.yaml \
   --set image.repository=yourregistry.azurecr.io/will-it-compile/api \
   --set compilerImages.cpp.repository=yourregistry.azurecr.io/will-it-compile/cpp-gcc
 ```
@@ -652,7 +652,7 @@ helm install will-it-compile ./deployments/helm/will-it-compile \
 # Update with new values
 helm upgrade will-it-compile ./deployments/helm/will-it-compile \
   --namespace will-it-compile \
-  --values ./deployments/helm/will-it-compile/values-production.yaml
+  --values ./deployments/helm/will-it-compile/values-prod.yaml
 
 # Update to new image version
 helm upgrade will-it-compile ./deployments/helm/will-it-compile \
@@ -796,7 +796,7 @@ kubectl delete namespace will-it-compile
 For high-traffic environments:
 
 ```yaml
-# values-production.yaml
+# values-prod.yaml
 resources:
   limits:
     cpu: 4000m
@@ -817,7 +817,7 @@ autoscaling:
 Use dedicated nodes for compilation jobs:
 
 ```yaml
-# values-production.yaml
+# values-prod.yaml
 nodeSelector:
   workload: compilation
 
