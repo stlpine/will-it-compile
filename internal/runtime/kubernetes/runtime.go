@@ -416,19 +416,25 @@ func (k *KubernetesRuntime) getSourceFilename(config runtime.CompilationConfig) 
 }
 
 // buildCompileScript creates a shell script that:
-// 1. Copies source from read-only /source to writable /tmp
-// 2. Changes to /tmp directory
-// 3. Runs the compile command
+// 1. Copies source from read-only /source to writable /tmp/workspace
+// 2. Runs the compile command with /workspace paths rewritten to /tmp/workspace
+//
+// The compile command from compiler.go uses /workspace paths, but in Kubernetes
+// we use /tmp/workspace as the writable workspace (source is mounted read-only).
 func (k *KubernetesRuntime) buildCompileScript(config runtime.CompilationConfig) string {
 	sourceFilename := k.getSourceFilename(config)
 
+	// Rewrite /workspace paths to /tmp/workspace for Kubernetes environment
+	// The source ConfigMap is mounted read-only at /source, so we copy to /tmp/workspace
+	compileCmd := strings.ReplaceAll(config.CompileCommand, "/workspace/", "/tmp/workspace/")
+
 	// Build the script:
-	// - Copy source file to /tmp
-	// - cd to /tmp (writable workspace)
-	// - Run the compile command
-	script := fmt.Sprintf("cp /source/%s /tmp/ && cd /tmp && %s",
+	// - Create /tmp/workspace as writable workspace
+	// - Copy source file from read-only /source to /tmp/workspace
+	// - Run the compile command (with paths rewritten)
+	script := fmt.Sprintf("mkdir -p /tmp/workspace && cp /source/%s /tmp/workspace/ && %s",
 		sourceFilename,
-		config.CompileCommand,
+		compileCmd,
 	)
 
 	return script
