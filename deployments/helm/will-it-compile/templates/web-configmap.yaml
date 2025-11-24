@@ -47,8 +47,8 @@ data:
         # This prevents serving index.html for API requests if Ingress misbehaves
         # The Ingress should route /api to the API service, but this is a safety net
         location /api/ {
+            default_type application/json;
             return 404 '{"error": "API endpoint not found on web server"}';
-            add_header Content-Type application/json always;
         }
 
         # Health check endpoint
