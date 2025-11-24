@@ -1,5 +1,5 @@
 import { useEffect, useState, forwardRef, useImperativeHandle } from 'react'
-import { Activity, CheckCircle, Clock, XCircle, Users, Server, AlertTriangle, AlertCircle } from 'lucide-react'
+import { Activity, CheckCircle, Clock, XCircle, Users, Server, AlertCircle } from 'lucide-react'
 import { getWorkerStats } from '../../services/api'
 import type { WorkerStats } from '../../types/api'
 

@@ -570,8 +570,8 @@ func TestBuildCompileCommand(t *testing.T) {
 				Standard: models.StandardC11,
 			},
 			sourceFilename:  "source.c",
-			expectedCommand: "g++ -std=c11 /workspace/source.c -o /workspace/output",
-			shouldContain:   []string{"g++", "-std=c11", "source.c"},
+			expectedCommand: "gcc -std=c11 /workspace/source.c -o /workspace/output",
+			shouldContain:   []string{"gcc", "-std=c11", "source.c"},
 		},
 		{
 			name: "go_language",
