@@ -193,7 +193,7 @@ docker push registry.io/will-it-compile/api:v1.0.0
 helm install will-it-compile ./deployments/helm/will-it-compile \
   --namespace will-it-compile \
   --create-namespace \
-  --values ./deployments/helm/will-it-compile/values-production.yaml
+  --values ./deployments/helm/will-it-compile/values-prod.yaml
 ```
 
 ## Testing
@@ -298,7 +298,7 @@ Tested and documented for:
 2. **Add Production K8s Deployment**:
    ```bash
    helm install will-it-compile ./deployments/helm/will-it-compile \
-     --values ./deployments/helm/will-it-compile/values-production.yaml
+     --values ./deployments/helm/will-it-compile/values-prod.yaml
    ```
 
 3. **Auto-Detection**:

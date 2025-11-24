@@ -18,7 +18,7 @@ helm install will-it-compile ./deployments/helm/will-it-compile
 
 # Install with custom values
 helm install will-it-compile ./deployments/helm/will-it-compile \
-  --values ./deployments/helm/will-it-compile/values-production.yaml
+  --values ./deployments/helm/will-it-compile/values-prod.yaml
 
 # Install in a specific namespace
 helm install will-it-compile ./deployments/helm/will-it-compile \
@@ -199,7 +199,7 @@ curl -X POST http://localhost:8080/api/v1/compile \
 ```bash
 # Upgrade with new values
 helm upgrade will-it-compile ./deployments/helm/will-it-compile \
-  --values ./values-production.yaml
+  --values ./values-prod.yaml
 
 # Upgrade with inline changes
 helm upgrade will-it-compile ./deployments/helm/will-it-compile \
