@@ -43,6 +43,10 @@ spec:
         env:
         - name: API_SERVICE_URL
           value: "http://{{ include "will-it-compile.fullname" . }}:{{ .Values.service.port }}"
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/conf.d
+          readOnly: true
         livenessProbe:
           httpGet:
             path: /
@@ -73,4 +77,8 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: {{ include "will-it-compile.fullname" . }}-web-nginx
 {{- end }}
