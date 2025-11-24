@@ -5,7 +5,7 @@ replicaCount: 3
 
 image:
   repository: stlpine/will-it-compile-api
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   tag: ""  # Specify git SHA or semantic version at deploy time, never use 'latest'
 
 imagePullSecrets: []
@@ -232,7 +232,7 @@ web:
 
   image:
     repository: stlpine/will-it-compile-web
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     tag: ""  # Specify git SHA or semantic version at deploy time, never use 'latest'
 
   service:
