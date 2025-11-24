@@ -86,15 +86,19 @@ service:
 ingress:
   enabled: false
   className: ""
-  annotations: {}
+  annotations:
+    # Enable regex for precise path matching - ensures /api takes priority over /
+    nginx.ingress.kubernetes.io/use-regex: "true"
     # kubernetes.io/ingress.class: nginx
     # cert-manager.io/cluster-issuer: letsencrypt-prod
   hosts:
     - host: chart-example.local
       paths:
-        - path: /api
-          pathType: Prefix
+        # API routes - regex ensures higher priority over catch-all
+        - path: /api(/|$)(.*)
+          pathType: ImplementationSpecific
           backend: api
+        # Web frontend - catch all other routes
         - path: /
           pathType: Prefix
           backend: web

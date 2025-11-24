@@ -74,7 +74,7 @@ export function StatusBar({ isCompiling, result, statusMessage }: StatusBarProps
 
   return (
     <Card
-      className={`sticky top-0 z-50 rounded-none border-x-0 border-t-0 border-b-2 ${config.borderColor} ${config.color} transition-all duration-300 shadow-md`}
+      className={`sticky top-[73px] z-40 rounded-none border-x-0 border-t-0 border-b-2 ${config.borderColor} ${config.color} transition-all duration-300 shadow-md`}
     >
       <div className="container mx-auto max-w-7xl px-4 py-3">
         <div className="flex items-center justify-between gap-4">

@@ -98,17 +98,17 @@ func getHardcodedEnvironments() map[string]models.EnvironmentSpec {
 			OS:           models.OSLinux,
 			ImageTag:     "gcc:13",
 		},
-		"go-go": {
+		"go-go-1.23": {
 			Language:     models.LanguageGo,
-			Compiler:     models.CompilerGo,
+			Compiler:     models.CompilerGo123,
 			Version:      "1.23",
 			Architecture: models.ArchX86_64,
 			OS:           models.OSLinux,
 			ImageTag:     "golang:1.23-alpine",
 		},
-		"rust-rustc": {
+		"rust-rustc-1.80": {
 			Language:     models.LanguageRust,
-			Compiler:     models.CompilerRustc,
+			Compiler:     models.CompilerRustc180,
 			Version:      "1.80",
 			Architecture: models.ArchX86_64,
 			OS:           models.OSLinux,

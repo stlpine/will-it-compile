@@ -186,7 +186,7 @@ func TestValidateRequest(t *testing.T) {
 			request: models.CompilationRequest{
 				Code:     base64.StdEncoding.EncodeToString([]byte("package main")),
 				Language: models.LanguageGo,
-				Compiler: models.CompilerGo,
+				Compiler: models.CompilerGo123,
 			},
 			expectError: false,
 		},
@@ -269,7 +269,7 @@ func TestSelectEnvironment(t *testing.T) {
 			name: "unsupported_compiler",
 			request: models.CompilationRequest{
 				Language: models.LanguageCpp,
-				Compiler: models.CompilerClang15,
+				Compiler: "clang-15", // Not in hardcoded environments
 			},
 			expectError: true,
 		},
@@ -459,7 +459,7 @@ func main() { fmt.Println("Hello, Go!") }`
 		Request: models.CompilationRequest{
 			Code:     encodedCode,
 			Language: models.LanguageGo,
-			Compiler: models.CompilerGo,
+			Compiler: models.CompilerGo123,
 		},
 	}
 
@@ -501,7 +501,7 @@ func TestCompile_RustLanguage(t *testing.T) {
 		Request: models.CompilationRequest{
 			Code:     encodedCode,
 			Language: models.LanguageRust,
-			Compiler: models.CompilerRustc,
+			Compiler: models.CompilerRustc180,
 		},
 	}
 
@@ -638,14 +638,14 @@ func TestMultiLanguageCompilation(t *testing.T) {
 		{
 			name:         "go_compilation",
 			language:     models.LanguageGo,
-			compiler:     models.CompilerGo,
+			compiler:     models.CompilerGo123,
 			sourceCode:   `package main; func main() {}`,
 			expectedFile: "main.go",
 		},
 		{
 			name:         "rust_compilation",
 			language:     models.LanguageRust,
-			compiler:     models.CompilerRustc,
+			compiler:     models.CompilerRustc180,
 			sourceCode:   `fn main() {}`,
 			expectedFile: "main.rs",
 		},

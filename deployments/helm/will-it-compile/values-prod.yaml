@@ -76,14 +76,16 @@ ingress:
     cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/rate-limit: "100"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # Enable regex for precise path matching - ensures /api takes priority over /
+    nginx.ingress.kubernetes.io/use-regex: "true"
   hosts:
     - host: compile.example.com
       paths:
-        # API backend - handles all /api/* requests
-        - path: /api
-          pathType: Prefix
+        # API routes - regex ensures higher priority over catch-all
+        - path: /api(/|$)(.*)
+          pathType: ImplementationSpecific
           backend: api
-        # Web frontend - handles all other requests (root, static assets, etc.)
+        # Web frontend - catch all other routes
         - path: /
           pathType: Prefix
           backend: web
