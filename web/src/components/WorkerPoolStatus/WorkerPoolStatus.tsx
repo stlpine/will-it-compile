@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, forwardRef, useImperativeHandle } from 'react'
 import { Activity, CheckCircle, Clock, XCircle, Users, Server } from 'lucide-react'
 import { getWorkerStats } from '../../services/api'
 import type { WorkerStats } from '../../types/api'
@@ -8,10 +8,12 @@ interface WorkerPoolStatusProps {
   refreshInterval?: number // in milliseconds
 }
 
-export function WorkerPoolStatus({
-  autoRefresh = true,
-  refreshInterval = 2000,
-}: WorkerPoolStatusProps) {
+export interface WorkerPoolStatusHandle {
+  refresh: () => Promise<void>
+}
+
+export const WorkerPoolStatus = forwardRef<WorkerPoolStatusHandle, WorkerPoolStatusProps>(
+  function WorkerPoolStatus({ autoRefresh = true, refreshInterval = 2000 }, ref) {
   const [stats, setStats] = useState<WorkerStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -27,6 +29,11 @@ export function WorkerPoolStatus({
       setLoading(false)
     }
   }
+
+  // Expose refresh method to parent components
+  useImperativeHandle(ref, () => ({
+    refresh: fetchStats,
+  }))
 
   useEffect(() => {
     fetchStats()
@@ -177,7 +184,7 @@ export function WorkerPoolStatus({
       </div>
     </div>
   )
-}
+})
 
 interface StatCardProps {
   icon: React.ReactNode
