@@ -3,7 +3,7 @@ import { CodeEditor } from '@/components/CodeEditor'
 import { EnvironmentSelector } from '@/components/EnvironmentSelector'
 import { CompilerOutput } from '@/components/CompilerOutput'
 import { StatusBar } from '@/components/StatusBar'
-import { WorkerPoolStatus } from '@/components/WorkerPoolStatus'
+import { WorkerPoolStatus, WorkerPoolStatusHandle } from '@/components/WorkerPoolStatus'
 import { useCompilation } from '../hooks/useCompilation'
 import {
   Language,
@@ -55,6 +55,9 @@ export function Home() {
 
   // Ref for auto-scrolling to results
   const resultsRef = useRef<HTMLDivElement>(null)
+
+  // Ref for worker pool status to trigger refresh on compile
+  const workerPoolRef = useRef<WorkerPoolStatusHandle>(null)
 
   const { isCompiling, result, error, statusMessage, compile, reset } =
     useCompilation()
@@ -137,6 +140,9 @@ export function Home() {
       // Include standard for C and C++
       const includeStandard = language === 'cpp' || language === 'c++' || language === 'c'
 
+      // Trigger worker status refresh immediately when compilation starts
+      workerPoolRef.current?.refresh()
+
       await compile({
         code: encodedCode,
         language: config.language,
@@ -145,6 +151,9 @@ export function Home() {
         architecture: DEFAULT_ARCHITECTURE,
         os: DEFAULT_OS,
       })
+
+      // Refresh worker status again after compilation completes
+      workerPoolRef.current?.refresh()
     } catch (err) {
       setValidationError(
         err instanceof Error ? err.message : 'Failed to encode code'
@@ -210,7 +219,7 @@ export function Home() {
       <main className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
           {/* Worker Pool Status */}
-          <WorkerPoolStatus autoRefresh={true} refreshInterval={2000} />
+          <WorkerPoolStatus ref={workerPoolRef} autoRefresh={true} refreshInterval={2000} />
 
           {/* Security Warning */}
           {securityWarning && (
