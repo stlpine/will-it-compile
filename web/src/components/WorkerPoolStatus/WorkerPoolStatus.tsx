@@ -1,5 +1,5 @@
 import { useEffect, useState, forwardRef, useImperativeHandle } from 'react'
-import { Activity, CheckCircle, Clock, XCircle, Users, Server } from 'lucide-react'
+import { Activity, CheckCircle, Clock, XCircle, Users, Server, AlertCircle } from 'lucide-react'
 import { getWorkerStats } from '../../services/api'
 import type { WorkerStats } from '../../types/api'
 
@@ -160,25 +160,52 @@ export const WorkerPoolStatus = forwardRef<WorkerPoolStatusHandle, WorkerPoolSta
         <h3 className="mb-3 text-sm font-semibold text-gray-700">
           Processing Statistics
         </h3>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-5">
           <div className="flex items-center justify-between rounded-md bg-gray-50 px-3 py-2">
-            <span className="text-sm text-gray-600">Total Processed</span>
+            <span className="text-sm text-gray-600">Total</span>
             <span className="font-semibold text-gray-900">{stats.total_processed}</span>
           </div>
           <div className="flex items-center justify-between rounded-md bg-green-50 px-3 py-2">
-            <span className="text-sm text-green-700">Successful</span>
+            <div className="flex items-center gap-1">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <span className="text-sm text-green-700">Compiled</span>
+            </div>
             <span className="font-semibold text-green-900">
               {stats.total_successful}
             </span>
           </div>
           <div className="flex items-center justify-between rounded-md bg-red-50 px-3 py-2">
-            <span className="text-sm text-red-700">Failed</span>
+            <div className="flex items-center gap-1">
+              <XCircle className="h-4 w-4 text-red-600" />
+              <span className="text-sm text-red-700">Failed</span>
+            </div>
             <span className="font-semibold text-red-900">{stats.total_failed}</span>
+          </div>
+          <div className="flex items-center justify-between rounded-md bg-amber-50 px-3 py-2">
+            <div className="flex items-center gap-1">
+              <Clock className="h-4 w-4 text-amber-600" />
+              <span className="text-sm text-amber-700">Timeout</span>
+            </div>
+            <span className="font-semibold text-amber-900">{stats.total_timeout}</span>
+          </div>
+          <div className="flex items-center justify-between rounded-md bg-orange-50 px-3 py-2">
+            <div className="flex items-center gap-1">
+              <AlertCircle className="h-4 w-4 text-orange-600" />
+              <span className="text-sm text-orange-700">Errors</span>
+            </div>
+            <span className="font-semibold text-orange-900">{stats.total_errors}</span>
           </div>
         </div>
         {stats.total_processed > 0 && (
           <div className="mt-3 text-center text-sm text-gray-600">
-            Success Rate: <span className="font-semibold">{successRate.toFixed(1)}%</span>
+            Compilation Success Rate: <span className="font-semibold">{successRate.toFixed(1)}%</span>
+            {stats.total_errors > 0 && (
+              <span className="ml-4 text-orange-600">
+                System Reliability: <span className="font-semibold">
+                  {((stats.total_processed - stats.total_errors) / stats.total_processed * 100).toFixed(1)}%
+                </span>
+              </span>
+            )}
           </div>
         )}
       </div>

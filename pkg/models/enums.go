@@ -150,7 +150,8 @@ type JobStatus string
 const (
 	StatusQueued     JobStatus = "queued"
 	StatusProcessing JobStatus = "processing"
-	StatusCompleted  JobStatus = "completed"
-	StatusFailed     JobStatus = "failed"
-	StatusTimeout    JobStatus = "timeout"
+	StatusCompleted  JobStatus = "completed" // Code compiled successfully
+	StatusFailed     JobStatus = "failed"    // Code failed to compile (syntax/linker errors)
+	StatusTimeout    JobStatus = "timeout"   // Compilation timed out
+	StatusError      JobStatus = "error"     // Infrastructure/system error
 )
