@@ -102,8 +102,15 @@ func (s *Server) Close() error {
 // @Accept application/json
 // @Param  request body models.CompilationRequest true "Compilation request"
 // @Return 202 {object} models.JobResponse "Job created and queued"
-// @Return 400 {object} models.ErrorResponse "Invalid request body".
+// @Return 400 {object} models.ErrorResponse "Invalid request body"
+// @Return 429 {object} models.ErrorResponse "No workers available (all busy)".
 func (s *Server) HandleCompile(c echo.Context) error {
+	// Check if workers are available
+	stats := s.workerPool.GetStats()
+	if stats.AvailableSlots == 0 {
+		return echo.NewHTTPError(http.StatusTooManyRequests, "no workers available, all workers are busy processing requests")
+	}
+
 	// Parse request body
 	var req models.CompilationRequest
 	if err := c.Bind(&req); err != nil {
@@ -127,7 +134,7 @@ func (s *Server) HandleCompile(c echo.Context) error {
 	// Submit to worker pool
 	if !s.workerPool.Submit(job) {
 		// Queue is full, return error
-		return echo.NewHTTPError(http.StatusServiceUnavailable, "job queue is full, please try again later")
+		return echo.NewHTTPError(http.StatusTooManyRequests, "job queue is full, please try again later")
 	}
 
 	// Return job response

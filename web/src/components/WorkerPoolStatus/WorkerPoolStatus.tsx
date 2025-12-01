@@ -10,6 +10,7 @@ interface WorkerPoolStatusProps {
 
 export interface WorkerPoolStatusHandle {
   refresh: () => Promise<void>
+  hasAvailableWorkers: () => boolean
 }
 
 export const WorkerPoolStatus = forwardRef<WorkerPoolStatusHandle, WorkerPoolStatusProps>(
@@ -30,9 +31,10 @@ export const WorkerPoolStatus = forwardRef<WorkerPoolStatusHandle, WorkerPoolSta
     }
   }
 
-  // Expose refresh method to parent components
+  // Expose refresh method and availability check to parent components
   useImperativeHandle(ref, () => ({
     refresh: fetchStats,
+    hasAvailableWorkers: () => (stats?.available_slots ?? 0) > 0,
   }))
 
   useEffect(() => {
