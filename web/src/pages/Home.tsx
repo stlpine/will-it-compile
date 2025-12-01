@@ -114,6 +114,14 @@ export function Home() {
       return
     }
 
+    // Check worker availability before submitting
+    if (workerPoolRef.current && !workerPoolRef.current.hasAvailableWorkers()) {
+      setValidationError(
+        'No workers available. All workers are currently busy processing other requests. Please wait and try again.'
+      )
+      return
+    }
+
     // Validate code input
     const validation = validateCode(code)
     if (!validation.valid) {
