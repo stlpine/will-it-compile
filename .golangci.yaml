@@ -42,7 +42,7 @@ linters:
         - name: error-strings
         - name: error-naming
         - name: if-return
-        - name: var-naming
+        # var-naming removed - too subjective, false positives on standard package names
         - name: unexported-return
         - name: errorf
 
