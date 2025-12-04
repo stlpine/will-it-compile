@@ -16,13 +16,11 @@ System design, architecture decisions, and deployment strategies:
 - **[Implementation Plan](architecture/IMPLEMENTATION_PLAN.md)** - Detailed implementation roadmap and architecture
 - **[Project Layout](architecture/PROJECT_LAYOUT.md)** - Project structure and organization patterns
 - **[Kubernetes Architecture](architecture/KUBERNETES_ARCHITECTURE.md)** - Kubernetes deployment design and patterns
-- **[Deployment Environments](architecture/DEPLOYMENT_ENVIRONMENTS.md)** - Multi-environment deployment strategies
 
 ### 🔧 Development
 
 Development guides, implementation details, and contribution guidelines:
 
-- **[Phase 2 Implementation](development/PHASE2_IMPLEMENTATION.md)** - Phase 2 features and implementation details
 - **[Testify Implementation](development/TESTIFY_IMPLEMENTATION.md)** - Testing framework and patterns
 
 ### 📘 User Guides
@@ -31,13 +29,12 @@ End-user documentation for CLI, TUI, and API:
 
 - **[CLI Guide](guides/CLI_GUIDE.md)** - Command-line interface usage guide
 - **[TUI Guide](guides/TUI_GUIDE.md)** - Terminal UI comprehensive guide
-- **[TUI Quickstart](guides/TUI_QUICKSTART.md)** - Quick start guide for TUI
 
 ### 🔬 Technical Details
 
 In-depth technical implementation documentation:
 
-- **[CLI Implementation](technical/CLI_IMPLEMENTATION.md)** - CLI technical implementation details
+- **[Redis Integration](technical/REDIS_INTEGRATION.md)** - Redis storage setup and integration
 
 ## 🚀 Getting Started
 
@@ -53,8 +50,7 @@ In-depth technical implementation documentation:
 
 ### For DevOps
 1. Review [Kubernetes Architecture](architecture/KUBERNETES_ARCHITECTURE.md)
-2. Check [Deployment Environments](architecture/DEPLOYMENT_ENVIRONMENTS.md)
-3. See [deployments/](../deployments/) for Helm charts and configs
+2. See [deployments/](../deployments/) for Helm charts and configs
 
 ## 📝 Documentation Conventions
 
@@ -75,7 +71,6 @@ When adding or updating documentation:
 
 ## 📦 Additional Resources
 
-- **Deployment Guides**: See [deployments/DEPLOYMENT_GUIDE.md](../deployments/DEPLOYMENT_GUIDE.md)
 - **Helm Charts**: See [deployments/helm/](../deployments/helm/)
 - **Sample Code**: See [tests/samples/](../tests/samples/)
 - **Scripts**: See [scripts/](../scripts/) for build and utility scripts

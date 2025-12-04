@@ -70,8 +70,7 @@ will-it-compile/
 │   ├── integration/      # Integration tests
 │   └── samples/          # Sample code files
 └── deployments/          # Deployment configurations
-    ├── helm/             # Kubernetes Helm charts
-    └── DEPLOYMENT_GUIDE.md
+    └── helm/             # Kubernetes Helm charts
 ```
 
 ### Monorepo Organization
@@ -609,7 +608,6 @@ All images must be pre-built and verified during deployment.
 - `deployments/` - Deployment configs and Helm charts
 - `docs/architecture/IMPLEMENTATION_PLAN.md` - Architecture details
 - `docs/architecture/KUBERNETES_ARCHITECTURE.md` - K8s deployment
-- `docs/architecture/DEPLOYMENT_ENVIRONMENTS.md` - Multi-environment strategy
 
 ## Code Quality & Linting
 
